@@ -82,54 +82,101 @@ export default [
     },
   },
   {
-    id: 'archimedes', realm: 'classic', cat: '流體', title: '阿基米德浮力原理', en: "Archimedes' Principle · Buoyancy", keys: '浮力 浮沉 密度 buoyancy',
-    tex: ['F_B = \\rho_{\\text{液}}\\, V_{\\text{排開}}\\, g', '\\text{漂浮時}\\;\\dfrac{V_{\\text{沒入}}}{V} = \\dfrac{\\rho_{\\text{物}}}{\\rho_{\\text{液}}}'],
-    explain: '<p>泡在液體裡的物體會受到向上的浮力，大小等於它<b>排開的液體重量</b>。因為液體越深壓力越大，物體底部被往上推的力比頂部往下壓的力大，差值就是浮力。</p><p>物體密度比液體小就會浮起來，而且沉到剛好「排開的液體重量 = 自身重量」為止；密度比液體大就沉底。鋼鐵做的船能浮，是因為整艘船（含裡面的空氣）的平均密度比水小。</p>',
-    watch: ['方塊浮著不動時，紅色（重力）和青色（浮力）箭頭一樣長。', '密度調成 600：方塊剛好六成泡在水裡。', '換成水銀（13600 kg/m³）：連鐵塊（7870）都會浮起來。'],
+    id: 'archimedes', realm: 'classic', cat: '流體', title: '阿基米德浮力原理', en: "Archimedes' Principle · Buoyancy", keys: '浮力 浮沉 密度 buoyancy 船 視重 液壓',
+    tex: ['F_B = \\rho_{\\text{液}}\\, V_{\\text{排開}}\\, g = (P_{\\text{底}} - P_{\\text{頂}})\\,A', '\\text{漂浮時}\;\\dfrac{V_{\\text{沒入}}}{V} = \\dfrac{\\bar\\rho_{\\text{物}}}{\\rho_{\\text{液}}}'],
+    explain: '<p>泡在液體裡的物體會受到向上的浮力，大小等於它<b>排開的液體重量</b>（右邊那塊就是被排開的液體，它的重量正好等於浮力）。</p><p>浮力從哪來？液體壓力 \\(P = \\rho g h\\) 越深越大。白色小箭頭是液體壓在方塊各面上的力：左右兩側同深度的壓力互相抵消，<b>底部往上推的比頂部往下壓的大</b>，差值就是浮力。</p><p>物體的平均密度比液體小就會浮起來，沉到「排開的液體重量 = 自身重量」為止；比液體大就沉底，這時地板要再出一個<b>支撐力</b>補上差額。在液體裡用秤去秤，讀數是<b>視重</b> = 重量 − 浮力。</p><p>同樣的鋼，做成實心方塊會沉，做成空心的船就浮：船排開的是整個外形的體積，平均密度（含裡面的空氣）比水小。但船身一旦被淹過、水灌進去，就只剩鋼板本身在排水，馬上沉下去。</p>',
+    watch: ['白色壓力箭頭：越深越長；左右成對抵消，只剩底部比頂部多推的那一截。', '密度調成 600：方塊剛好六成泡在水裡，右邊排開的水也是 0.6 m³、重量等於浮力。', '密度調到 7870（鐵）會沉，綠色支撐力箭頭補上重量與浮力的差。再打開「空心（做成船）」，同樣的鐵就浮起來了。', '船浮著時按「把船壓下去（灌水）」：船舷一被淹過，水灌進去，只剩鋼板排水，馬上沉到底。', '換成水銀（13600 kg/m³）：連鐵塊都會浮起來。'],
     params: [
-      { k: 'rho', label: '方塊密度', min: 100, max: 8000, step: 10, v: 600, unit: 'kg/m³' },
+      { k: 'rho', label: '材料密度', min: 100, max: 8000, step: 10, v: 600, unit: 'kg/m³' },
       { k: 'rf', label: '液體', options: [[1000, '清水'], [1025, '海水'], [790, '酒精'], [13600, '水銀']], v: 1000 },
+      { k: 'hollow', label: '空心（做成船，壁厚 2 cm）', bool: true, v: false },
     ],
-    cam: [5, 4.5, 9], target: [0, 2.2, 0],
+    cam: [5, 4.5, 10], target: [0.8, 2.2, 0],
     setup({ THREE, root, U, P, out }) {
-      const G = 9.8, W = 4, H0 = 2.4, TOP = 4.6;
+      const G = 9.8, W = 4, H0 = 2.4, TOP = 4.6, SHELL = 1 - 0.96 * 0.96 * 0.98;   // 1 m³ 外形、壁厚 2 cm 的開口箱，鋼板體積比例
       const tank = U.box(W, TOP, W, U.mat(0xbfe6ff, { opacity: 0.07, side: THREE.BackSide })); tank.position.y = TOP / 2;
       const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(W, TOP, W)), new THREE.LineBasicMaterial({ color: 0xbfe6ff, transparent: true, opacity: 0.35 }));
       edges.position.y = TOP / 2;
-      const water = U.box(W - 0.04, 1, W - 0.04, U.mat(0x2f8fd8, { opacity: 0.32, rough: 0.1 }));
+      const floor = U.box(W + 0.1, 0.08, W + 0.1, U.mat(0x3a3f4c, { metal: 0.4 })); floor.position.y = -0.04;
+      const water = U.box(W - 0.04, 1, W - 0.04, U.mat(0x2f8fd8, { opacity: 0.3, rough: 0.1, depthWrite: false }));
       const surf = U.mesh(new THREE.PlaneGeometry(W - 0.04, W - 0.04), U.glow(0x7fd6ff, 0.18)); surf.rotation.x = -Math.PI / 2;
-      const block = U.box(1, 1, 1, U.mat(0xb08a5a, { rough: 0.7 }));
-      const wA = U.arrow(RED, 0.06), bA = U.arrow(CYAN, 0.06);
-      const wL = U.label('重力', { color: '#ff6b6b', size: 0.34 }), bL = U.label('浮力', { color: '#4fd1e8', size: 0.34 });
+      // 物體：實心方塊或開口的船（同樣 1×1×1 外形）
+      const obj = new THREE.Group(), mat = U.mat(0xb08a5a, { rough: 0.7 });
+      const block = U.box(1, 1, 1, mat);
+      const boat = new THREE.Group();
+      const bottom = U.box(1, 0.02, 1, mat); bottom.position.y = -0.49; boat.add(bottom);
+      for (const [x, z, w, d] of [[0.49, 0, 0.02, 1], [-0.49, 0, 0.02, 1], [0, 0.49, 1, 0.02], [0, -0.49, 1, 0.02]]) { const wl = U.box(w, 1, d, mat); wl.position.set(x, 0, z); boat.add(wl); }
+      obj.add(block, boat);
+      // 力箭頭（放在物體前方 z = 0.75，不被水擋住）
+      const wA = U.arrow(RED, 0.06), bA = U.arrow(CYAN, 0.06), nA = U.arrow(0x7fe08a, 0.06);
+      const wL = U.label('重力 W', { color: '#ff6b6b', size: 0.32 }), bL = U.label('浮力 B', { color: '#4fd1e8', size: 0.32 }), nL = U.label('支撐力 N', { color: '#7fe08a', size: 0.32 });
+      // 液體壓力：底 4、頂 4、左右各 3 支
+      const pArr = Array.from({ length: 14 }, () => U.arrow(0xffffff, 0.022));
+      // 排開的液體：放在水箱右邊，體積＝沒入體積
+      const disp = U.box(1, 1, 1, U.mat(0x2f8fd8, { opacity: 0.55, rough: 0.1 })), dEdge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)), new THREE.LineBasicMaterial({ color: 0xbfe6ff, transparent: true, opacity: 0.5 }));
+      const dLab = U.label('', { size: 0.28, color: '#7fd6ff' });
+      dEdge.position.set(W / 2 + 1.3, 0.5, 0); dLab.position.set(W / 2 + 1.3, 1.5, 0);
       const status = U.label('', { size: 0.42 }); status.position.set(0, TOP + 0.8, 0);
-      root.add(tank, edges, water, surf, block, wA, bA, wL, bL, status);
+      root.add(tank, edges, floor, water, surf, obj, wA, bA, nA, wL, bL, nL, ...pArr, disp, dEdge, dLab, status);
       const wood = new THREE.Color(0xb08a5a), steel = new THREE.Color(0x8d96a8), c = new THREE.Color();
-      let y, v, sub = 0;
-      const drop = () => { y = TOP + 1; v = 0; };
+      let y, v, sub = 0, flooded = false;
+      const level = () => H0 + sub * (P.hollow && !flooded ? 1 : P.hollow ? SHELL : 1) / (W * W);   // 液面上升＝真的排開的體積 / 水箱面積
+      // 方塊從上面丟下去；船用「吊車」輕輕放到水面（浮得起來就直接放在平衡吃水，不然用丟的會衝過船舷灌水）
+      const drop = () => {
+        v = 0; flooded = false;
+        if (!P.hollow) { y = TOP + 1; sub = 0; return; }
+        const eq = F.floatFraction(P.rho * SHELL, P.rf);
+        sub = eq < 1 ? eq : 0; y = level() + 0.5 - sub;
+      };
       drop();
       return {
-        actions: { '重新丟下去': drop },
+        actions: { '重新丟下去': drop, '把船壓下去（灌水）': () => { if (P.hollow) v = -3; } },
+        onParam: drop,
         update(dt) {
-          const level = H0 + sub / (W * W);
-          const steps = 10, h = dt / steps;
+          const m = P.rho * (P.hollow ? SHELL : 1), steps = 20, h = dt / steps;   // 質量（外形 1 m³）
           for (let i = 0; i < steps; i++) {
-            sub = U.clamp(level - (y - 0.5), 0, 1);
-            const a = (P.rf * sub * G - P.rho * G) / P.rho - (sub > 0 ? 2.5 : 0) * v;
+            const lv = level();
+            sub = U.clamp(lv - (y - 0.5), 0, 1);
+            if (P.hollow && !flooded && lv > y + 0.5) flooded = true;   // 船舷被淹過：水灌進去
+            const Vd = P.hollow && flooded ? sub * SHELL : sub;          // 進水後只剩鋼板排水
+            // 阻力：二次阻力 ½ρC_dAv|v|（C_d ≈ 1）＋一點波浪帶走能量的線性阻尼（簡化）
+            const drag = sub > 0 ? 0.5 * P.rf * 1.0 * v * Math.abs(v) + 0.8 * P.rf * sub * v : 0;
+            const a = (P.rf * Vd * G - m * G - drag) / m;
             v += a * h; y += v * h;
             if (y < 0.5) { y = 0.5; v = Math.max(0, v); }
           }
-          block.position.y = y;
-          block.material.color.copy(c.copy(wood).lerp(steel, U.clamp((P.rho - 900) / 3000, 0, 1)));
-          water.scale.y = level; water.position.y = level / 2;
-          surf.position.y = level + 0.001;
-          water.material.color.set(P.rf > 5000 ? 0xc8ccd6 : P.rf < 900 ? 0x8fb8d8 : 0x2f8fd8);
-          const Wt = P.rho * G, B = P.rf * sub * G, sc = 1.8 / Math.max(Wt, B, 1);
-          wA.set(U.V(-0.15, y, 0.6), U.V(0, -Wt * sc, 0)); bA.set(U.V(0.15, y - 0.5 + sub / 2, 0.6), U.V(0, B * sc, 0));
-          wL.position.set(-0.75, y - Wt * sc - 0.2, 0.6); bL.position.set(0.75, y - 0.5 + sub / 2 + B * sc + 0.2, 0.6);
-          bL.visible = B > 1;
-          const floats = P.rho < P.rf;
-          status.set(floats ? `浮起：${(F.floatFraction(P.rho, P.rf) * 100).toFixed(0)}% 泡在液體裡` : '沉到底');
-          out({ '重量 ρVg': (Wt / 1000).toFixed(2) + ' kN', '浮力 ρ液 V排 g': (B / 1000).toFixed(2) + ' kN', '目前沒入比例': (sub * 100).toFixed(0) + '%', '平衡時沒入': floats ? (F.floatFraction(P.rho, P.rf) * 100).toFixed(0) + '%' : '100%（沉底）', '液面上升': (sub / (W * W) * 100).toFixed(1) + ' cm' });
+          const lv = level(), Vd = P.hollow && flooded ? sub * SHELL : sub;
+          obj.position.y = y;
+          block.visible = !P.hollow; boat.visible = P.hollow;
+          mat.color.copy(c.copy(wood).lerp(steel, U.clamp((P.rho - 900) / 3000, 0, 1)));
+          water.scale.y = lv; water.position.y = lv / 2;
+          surf.position.y = lv + 0.001;
+          const wc = P.rf > 5000 ? 0xc8ccd6 : P.rf < 900 ? 0x8fb8d8 : 0x2f8fd8;
+          water.material.color.set(wc); disp.material.color.set(wc);
+          // 力：W、B、沉底時的支撐力 N（靜止才算）
+          const Wt = m * G, B = P.rf * Vd * G, onFloor = y <= 0.5001 && Wt > B, N = onFloor ? Wt - B : 0;
+          const sc = Math.min(1.6 / Math.max(Wt, B, 1), (y - 0.05) / Wt);   // 重力箭頭最長只到地板
+          const z = 0.75;
+          wA.set(U.V(-0.2, y, z), U.V(0, -Wt * sc, 0)); wL.position.set(-0.75, y - Wt * sc - 0.15, z);
+          bA.set(U.V(0.2, y - 0.5 + sub / 2, z), U.V(0, B * sc, 0)); bL.position.set(0.75, y - 0.5 + sub / 2 + B * sc + 0.15, z); bL.visible = B > 1;
+          nA.set(U.V(0, 0.02, z), U.V(0, N * sc, 0)); nL.position.set(-0.95, N * sc + 0.1, z + 0.2); nL.visible = N > 1;
+          // 壓力箭頭：長度＝深度 × 0.5（同一種液體下跟壓力成正比），朝向表面內側
+          const depth = yy => Math.max(0, lv - yy), PS = 0.5;
+          let k = 0;
+          for (const [dx, dz] of [[-0.25, -0.25], [0.25, -0.25], [-0.25, 0.25], [0.25, 0.25]]) {
+            const d = y > 0.501 ? depth(y - 0.5) * PS : 0; pArr[k++].set(U.V(dx, y - 0.5 - d, dz), U.V(0, d, 0));        // 底部往上推（貼著地板時畫不出來，就不畫）
+            const d2 = P.hollow ? 0 : depth(y + 0.5) * PS; pArr[k++].set(U.V(dx, y + 0.5 + d2, dz), U.V(0, -d2, 0));    // 頂部往下壓（船是開口的，沒有頂面）
+          }
+          for (const yy of [-0.3, 0, 0.3]) for (const sgn of [-1, 1]) {
+            const d = depth(y + yy) * PS; pArr[k++].set(U.V(sgn * (0.5 + d), y + yy, 0), U.V(-sgn * d, 0, 0));   // 左右互相抵消
+          }
+          // 排開的液體
+          disp.visible = Vd > 0.001; disp.scale.set(1, Math.max(0.001, Vd), 1); disp.position.set(W / 2 + 1.3, Vd / 2, 0);
+          dLab.set(`排開的液體 ${Vd.toFixed(2)} m³ → 重 ${(B / 1000).toFixed(2)} kN = 浮力`);
+          const floats = m / 1 < P.rf, eq = F.floatFraction(m, P.rf);
+          status.set(P.hollow && flooded ? '船進水了，沉下去！' : floats ? `浮起：${(eq * 100).toFixed(0)}% 泡在液體裡` : '沉到底');
+          const Pt = P.rf * G * depth(y + 0.5), Pb = P.rf * G * depth(y - 0.5);
+          out({ '外形體積': '1 m³', '質量 m': Math.round(m) + ' kg', '平均密度': Math.round(m) + ' kg/m³', '重量 W': (Wt / 1000).toFixed(2) + ' kN', '浮力 B = ρ液V排g': (B / 1000).toFixed(2) + ' kN', '頂面／底面壓力': `${(Pt / 1000).toFixed(1)} ／ ${(Pb / 1000).toFixed(1)} kPa`, '支撐力 N': onFloor ? (N / 1000).toFixed(2) + ' kN' : '0', '視重 W − B': ((Wt - B) / 1000).toFixed(2) + ' kN', '目前沒入': (sub * 100).toFixed(0) + '%', '平衡時沒入': floats ? (eq * 100).toFixed(0) + '%' : '100%（沉底）', '液面上升': (lv - H0) * 100 > 0 ? ((lv - H0) * 100).toFixed(1) + ' cm' : '0' });
         },
       };
     },
