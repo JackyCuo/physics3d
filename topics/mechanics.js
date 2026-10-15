@@ -118,16 +118,18 @@ export default [
     },
   },
   {
-    id: 'newton3', realm: 'classic', cat: '力學', title: '牛頓第三定律', en: "Newton's Third Law · Action–Reaction", keys: '作用力 反作用力',
+    id: 'newton3', realm: 'classic', cat: '力學', title: '牛頓第三定律', en: "Newton's Third Law · Action–Reaction", keys: '作用力 反作用力 巴掌',
     tex: '\\vec F_{12} = -\\vec F_{21}',
-    explain: '<p>A 推 B 的同時，B 也用<b>大小相同、方向相反</b>的力推 A。兩個力作用在不同物體上，所以不會互相抵消。</p><p>力一樣大，但質量小的那個加速度大，所以飛得比較快：\\(m_1 v_1 = m_2 v_2\\)，總動量維持 0。</p>',
-    watch: ['兩人的手貼在一起時（白光閃的地方）才有力，兩支紅箭頭永遠一樣長、方向相反。', '手臂打直推不動了，手一分開，力就消失，之後各自等速飄走。', '把其中一人質量調大：他後退得慢，另一人飛得快。'],
+    explain: '<p>A 打 B 一巴掌：手打臉的同時，臉也用<b>大小相同、方向相反</b>的力打手——所以打人的手也會痛。兩個力作用在不同物體上（一個在 B 的臉、一個在 A 的手），所以不會互相抵消。</p><p><b>那為什麼平常打人，自己不會往後飛？</b>因為腳底還有<b>另一對</b>作用與反作用力：A 的鞋往前推地面，地面用一樣大的摩擦力把 A 往前推，抵住了臉推手的力。地球太重，被推的那一下完全看不出來。最大靜摩擦力是 \\(\\mu m g\\)：巴掌太用力、或地板太滑，A 也會往後滑。</p><p>切到<b>太空</b>就沒有地面可以踩：兩人只受彼此的力，打完都會飄走，\\(m_1 v_1 = m_2 v_2\\)，總動量維持 0。在地面上摩擦力是外力，兩人的總動量就不守恆了（動量傳給了地球）。</p>',
+    watch: ['手碰到臉的那一下（白光、「啪」）才有力，兩支紅箭頭永遠一樣長、方向相反。', '地面：腳底的白色箭頭是地面給的摩擦力。A 的摩擦力朝 B，抵住臉推手的力，所以 A 站得住。', '把摩擦係數調到 0.2 以下或力道加大：靜摩擦撐不住，A 也往後滑。', '切到太空：沒有摩擦，打人的 A 一定往後飄；B 調重一點，A 反而飄得比 B 快。', '接觸時間放慢成 0.15 秒才看得到（真實巴掌約 0.01 秒，力大很多）。'],
     params: [
-      { k: 'm1', label: '左邊太空人質量 m₁', min: 40, max: 150, step: 1, v: 60, unit: 'kg' },
-      { k: 'm2', label: '右邊太空人質量 m₂', min: 40, max: 150, step: 1, v: 100, unit: 'kg' },
-      { k: 'f', label: '推力', min: 50, max: 400, step: 10, v: 200, unit: 'N' },
+      { k: 'm1', label: '打人的 A 質量 m₁', min: 40, max: 150, step: 1, v: 60, unit: 'kg' },
+      { k: 'm2', label: '被打的 B 質量 m₂', min: 40, max: 150, step: 1, v: 100, unit: 'kg' },
+      { k: 'f', label: '巴掌力道', min: 100, max: 1200, step: 10, v: 600, unit: 'N' },
+      { k: 'place', label: '場地', options: [['ground', '地面（有摩擦）'], ['space', '太空（沒摩擦）']], v: 'ground' },
+      { k: 'mu', label: '鞋底摩擦係數 μ（地面）', min: 0, max: 1.2, step: 0.05, v: 0.6 },
     ],
-    grid: false, cam: [0, 3, 12], target: [0, 1, 0],
+    grid: false, cam: [-1, 6, 10], target: [0.5, 1.4, 0.5],
     setup({ THREE, root, U, P, out }) {
       const stars = U.points(400, WHITE, 0.07);
       for (let i = 0; i < 400; i++) { const r = 30 + Math.random() * 20, th = Math.random() * 6.28, ph = Math.acos(2 * Math.random() - 1); stars.pos.set([r * Math.sin(ph) * Math.cos(th), r * Math.cos(ph), r * Math.sin(ph) * Math.sin(th)], i * 3); }
@@ -144,42 +146,65 @@ export default [
         return g;
       };
       const A = body(AMBER), B = body(CYAN);
-      // 手臂：高度 1 的圓柱轉成水平，scale.y＝長度；從肩膀伸到手的位置
-      const arm = c => { const g = new THREE.Group(), m = U.cyl(0.09, 0.09, 1, U.mat(0xdfe3ea, { rough: 0.6 })), h = U.sphere(0.14, U.mat(c, { emissive: c, ei: 0.3 })); m.rotation.z = Math.PI / 2; g.add(m, h); g.set = (x0, x1) => { m.scale.y = Math.abs(x1 - x0); m.position.x = (x0 + x1) / 2; h.position.x = x1; }; g.position.y = 1.3; return g; };
-      const armA = arm(AMBER), armB = arm(CYAN);
-      const spark = U.sphere(0.22, U.glow(0xffffff, 0.85)); spark.position.y = 1.3;
+      const arm = U.beam(0, 0.09, U.mat(0xdfe3ea, { rough: 0.6 })), hand = U.sphere(0.14, U.mat(AMBER, { emissive: AMBER, ei: 0.3 }));
+      const spark = U.sphere(0.22, U.glow(0xffffff, 0.85)), pa = U.label('啪！', { size: 0.6, color: '#fff' });
       const fA = U.arrow(RED, 0.08), fB = U.arrow(RED, 0.08), vA = U.arrow(AMBER), vB = U.arrow(CYAN);
-      const lA = U.label('F₂₁（B 推 A）', { color: '#ff6b6b' }), lB = U.label('F₁₂（A 推 B）', { color: '#ff6b6b' });
-      root.add(stars, A, B, armA, armB, spark, fA, fB, vA, vB, lA, lB);
-      const REST = 0.45, REACH = 1.1;   // 手臂平常長度、打直的長度（打直就推不下去，手分開）
-      let x1, x2, v1, v2, pushing, wait, t;
-      const sh = () => [x1 + 0.45 * Math.cbrt(P.m1 / 80), x2 - 0.45 * Math.cbrt(P.m2 / 80)];   // 兩人肩膀的 x
-      const reset = () => { const s1 = 0.45 * Math.cbrt(P.m1 / 80), s2 = 0.45 * Math.cbrt(P.m2 / 80); x1 = -(s1 + REST); x2 = s2 + REST; v1 = v2 = 0; pushing = false; wait = 1.2; t = 0; };
+      const lA = U.label('F₂₁（臉推手）', { color: '#ff6b6b' }), lB = U.label('F₁₂（手打臉）', { color: '#ff6b6b' });
+      const floor = U.box(30, 0.2, 8, U.mat(0x3a3f4b, { rough: 0.9 })); floor.position.set(0, 0.1, 0.5);
+      const frA = U.arrow(WHITE, 0.06), frB = U.arrow(WHITE, 0.06), lfA = U.label('地面推 A（摩擦力）', { size: 0.32 }), lfB = U.label('地面推 B（摩擦力）', { size: 0.32 });
+      root.add(stars, floor, A, B, arm, hand, spark, pa, fA, fB, vA, vB, lA, lB, frA, frB, lfA, lfB);
+      // 一個人在地面上走 h 秒：外力 Fa，靜摩擦撐得住就不動，撐不住用動摩擦（簡化成 μs = μk）；回傳 [新速度, 摩擦力]
+      const step = (v, Fa, m, h) => {
+        if (P.place === 'space') return [v + Fa / m * h, 0];
+        const fmax = P.mu * m * 9.8;
+        if (Math.abs(v) < 1e-9 && Math.abs(Fa) <= fmax) return [0, -Fa];
+        const fr = -Math.sign(v || Fa) * fmax, nv = v + (Fa + fr) / m * h;
+        return [nv * v < 0 && !Fa ? 0 : nv, fr];   // 只剩摩擦時減到 0 就停，不會倒退
+      };
+      // 手繞著「肩膀正上方」在水平面畫圓弧：角度 α 從 A0（手在後方）揮到 0（手在 A 正前方，速度朝 +x 打到 B 的臉頰）
+      // B 站在 A 的前方（z = R），臉頰剛好在 α = 0 時的手旁邊，所以力沿 x 軸、穿過 B 的頭心
+      const R = 1, A0 = 50 * Math.PI / 180, SWING = 0.3, TAU = 0.15;   // 揮手時間、接觸時間（放慢）
+      let x1, x2, v1, v2, f1, f2, ph, pt;   // ph：wait → swing → hit → done
+      const sc = () => [Math.cbrt(P.m1 / 80), Math.cbrt(P.m2 / 80)];
+      const reset = () => { const [s1, s2] = sc(); x1 = 0; x2 = 0.45 * s1 + 0.14 + 0.4 * s2; v1 = v2 = f1 = f2 = 0; ph = 'wait'; pt = 1.2; };
       reset();
-      const go = () => { reset(); wait = 0; pushing = true; };
+      const go = () => { reset(); ph = 'swing'; pt = SWING; };
       return {
-        actions: { '推！': go },
+        onParam: reset,
+        actions: { '打！': go },
         update(dt) {
-          t += dt;
-          if (wait > 0 && (wait -= dt) <= 0) pushing = true;
-          if (pushing) { v1 -= P.f / P.m1 * dt; v2 += P.f / P.m2 * dt; }
+          const [s1, s2] = sc();
+          if (ph === 'wait' && (pt -= dt) <= 0) { ph = 'swing'; pt = SWING; }
+          else if (ph === 'swing' && (pt -= dt) <= 0) { ph = 'hit'; pt = TAU; }
+          const h = ph === 'hit' ? Math.min(dt, pt) : 0;   // 這一幀裡有巴掌力的時間（接觸剛好結束在幀中間也算準衝量）
+          [v1, f1] = step(v1, -P.f, P.m1, h); [v2, f2] = step(v2, P.f, P.m2, h);
+          const r1 = step(v1, 0, P.m1, dt - h), r2 = step(v2, 0, P.m2, dt - h);
+          [v1, v2] = [r1[0], r2[0]];
+          if (!h) [f1, f2] = [r1[1], r2[1]];
+          if (ph === 'hit' && (pt -= dt) <= 0) { ph = 'done'; pt = 2.5; }
           x1 += v1 * dt; x2 += v2 * dt;
-          let [s1, s2] = sh();
-          if (pushing && (s2 - s1) / 2 > REACH) pushing = false;   // 手臂打直，手離開
-          if (x2 > 14 || x1 < -14) { reset(); [s1, s2] = sh(); }
-          A.position.set(x1, 1, 0); B.position.set(x2, 1, 0);
-          A.scale.setScalar(Math.cbrt(P.m1 / 80)); B.scale.setScalar(Math.cbrt(P.m2 / 80));
-          // 推的時候兩隻手貼在一起（接觸點 C）；放開後手縮回平常長度
-          const C = (s1 + s2) / 2, touching = pushing || wait > 0;
-          armA.set(s1, touching ? C - 0.14 : s1 + REST - 0.14); armB.set(s2, touching ? C + 0.14 : s2 - REST + 0.14);   // 手半徑 0.14，掌心剛好貼在 C
-          spark.visible = pushing; spark.position.x = C; spark.scale.setScalar(1 + 0.35 * Math.sin(t * 30));
-          // 兩個力都畫在接觸點：作用在 A 的朝左、作用在 B 的朝右，一樣長
-          const L = pushing ? P.f / 100 : 0;
-          fA.set(U.V(C, 1.55, 0.9), U.V(-L, 0, 0)); fB.set(U.V(C, 1.05, 0.9), U.V(L, 0, 0));   // z 0.9：在軀幹前面，不穿過身體
-          lA.visible = lB.visible = pushing;
-          lA.position.set(C - L / 2, 2.4, 0.9); lB.position.set(C + L / 2, 0.6, 0.9);
-          vA.set(U.V(x1, -0.4, 0), U.V(v1 * 1.5, 0, 0)); vB.set(U.V(x2, -0.4, 0), U.V(v2 * 1.5, 0, 0));
-          out({ 'v₁': v1.toFixed(2) + ' m/s', 'v₂': v2.toFixed(2) + ' m/s', 'm₁v₁': (P.m1 * v1).toFixed(1), 'm₂v₂': (P.m2 * v2).toFixed(1), '總動量': Math.abs(P.m1 * v1 + P.m2 * v2).toFixed(1) });
+          if (x2 > 14 || x1 < -14 || (ph === 'done' && !v1 && !v2 && (pt -= dt) <= 0)) reset();   // 地面上停住 2.5 秒後重來
+          const ground = P.place !== 'space', by1 = 0.2 + 0.74 * s1, by2 = 0.2 + 0.74 * s2;   // 軀幹底部貼地
+          floor.visible = ground;
+          A.position.set(x1, by1, 0); B.position.set(x2, by2, R);
+          A.scale.setScalar(s1); B.scale.setScalar(s2);
+          const k = ph === 'wait' ? 1 : ph === 'swing' ? (pt / SWING) ** 2 : 0, al = A0 * k;   // 越揮越快
+          const hy = by2 + s2, S = U.V(x1 + 0.45 * s1, by1 + 0.5 * s1, 0), H = U.V(S.x - R * Math.sin(al), hy, R * Math.cos(al));
+          arm.set(S, H); hand.position.copy(H);
+          const hit = ph === 'hit', C = U.V(H.x + 0.14, hy, R);   // 接觸點：手掌外緣＝臉頰表面
+          spark.visible = pa.visible = hit; spark.position.copy(C); spark.scale.setScalar(1 + 0.4 * Math.sin(pt * 200));
+          pa.position.set(C.x, hy + 1.1, R);
+          const L = hit ? P.f / 250 : 0;
+          fA.set(U.V(C.x, hy + 0.3, R + 0.9), U.V(-L, 0, 0)); fB.set(U.V(C.x, hy - 0.3, R + 0.9), U.V(L, 0, 0));   // 錯開高度、放在臉前面，不穿過頭
+          lA.visible = lB.visible = hit;
+          lA.position.set(C.x - L / 2, hy + 0.85, R + 0.9); lB.position.set(C.x + L / 2, hy - 0.65, R + 0.9);
+          // 摩擦力：箭頭從外側推進腳底（箭頭尖端在腳下），長度和巴掌力同比例；不會被另一個人擋住
+          const fs = 1 / 250, sgn = x => Math.sign(x) || 1;
+          frA.set(U.V(x1 - f1 * fs - sgn(f1) * 0.5, 0.3, 0), U.V(f1 * fs, 0, 0)); frB.set(U.V(x2 - f2 * fs - sgn(f2) * 0.5, 0.3, R), U.V(f2 * fs, 0, 0));
+          lfA.visible = !!f1; lfB.visible = !!f2;
+          lfA.position.set(x1 - f1 * fs / 2 - sgn(f1) * 0.5, -0.05, 0); lfB.position.set(x2 - f2 * fs / 2 - sgn(f2) * 0.5, -0.05, R);
+          vA.set(U.V(x1, 2.9, 0), U.V(v1 * 1.5, 0, 0)); vB.set(U.V(x2, 2.9, R), U.V(v2 * 1.5, 0, 0));
+          out({ '地面給 A 的摩擦力': ground ? f1.toFixed(0) + ' N' : '—', '地面給 B 的摩擦力': ground ? f2.toFixed(0) + ' N' : '—', 'A 最大靜摩擦 μm₁g': ground ? (P.mu * P.m1 * 9.8).toFixed(0) + ' N' : '—', 'v₁': v1.toFixed(2) + ' m/s', 'v₂': v2.toFixed(2) + ' m/s', 'm₁v₁': (P.m1 * v1).toFixed(1), 'm₂v₂': (P.m2 * v2).toFixed(1), '兩人總動量': (P.m1 * v1 + P.m2 * v2).toFixed(1) + (ground ? '（地面：摩擦是外力，不守恆）' : '（守恆）'), '衝量 FΔt': (P.f * TAU).toFixed(1) + ' N·s' });
         },
       };
     },
