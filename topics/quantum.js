@@ -248,7 +248,7 @@ export default [
     id: 'doubleslit', realm: 'quantum', cat: '波函數', title: '雙狹縫實驗', en: 'Double-Slit Experiment', keys: '干涉 interference 波粒二象性 觀測 測量 塌縮',
     tex: ['P(y) \\propto \\left|\\psi_1(y) + \\psi_2(y)\\right|^2', 'I(\\theta) \\propto \\cos^2\\!\\left(\\dfrac{\\pi d\\sin\\theta}{\\lambda}\\right)\\operatorname{sinc}^2\\!\\left(\\dfrac{\\pi a\\sin\\theta}{\\lambda}\\right)'],
     explain: '<p>費曼說這是「量子力學唯一的謎」。電子<b>一顆一顆</b>射過去，每顆只在螢幕上留下一個點；但累積幾千顆之後，點的分布出現了<b>干涉條紋</b>——好像每顆電子同時穿過兩條縫、自己跟自己干涉。</p><p>如果在縫旁邊放偵測器<b>觀測</b>電子走哪一條縫，條紋立刻消失，變成兩條縫各自的分布加起來。量子世界裡「知道路徑」和「干涉」不能同時存在。</p>',
-    watch: ['剛開始只看到亂點，等幾秒條紋才慢慢浮現。', '打開「觀測走哪條縫」再按清空：條紋不見了。', '縫距 d 越大或波長越短，條紋越密。'],
+    watch: ['沒觀測時，每顆粒子在縫前分成兩份、同時穿過兩條縫，到螢幕才合成一個點。', '剛開始只看到亂點，等幾秒條紋才慢慢浮現。', '打開「觀測走哪條縫」再按清空：條紋不見了。', '縫距 d 越大或波長越短，條紋越密。'],
     params: [
       { k: 'd', label: '雙縫間距 d', min: 0.6, max: 3, step: 0.05, v: 1.4 },
       { k: 'lam', label: '物質波波長 λ', min: 0.15, max: 0.6, step: 0.01, v: 0.3 },
@@ -261,10 +261,10 @@ export default [
       const src = U.cyl(0.4, 0.4, 1.2, U.mat(0x2a2d36, { metal: 0.7 })); src.rotation.z = Math.PI / 2; src.position.set(-9, 0, 0);
       const wallMat = U.mat(0x30343f, { metal: 0.5, rough: 0.4 }), walls = [U.box(0.2, 5, 1, wallMat), U.box(0.2, 5, 1, wallMat), U.box(0.2, 5, 1, wallMat)];
       const screen = U.box(0.1, 5, 2 * W, U.mat(0x0c0d12, { rough: 0.9 })); screen.position.set(L + 0.1, 0, 0);
-      const hits = U.points(MAXH, 0x4fd1e8, 0.07), fly = U.points(NF, 0xffffff, 0.16);
+      const hits = U.points(MAXH, 0x4fd1e8, 0.07), fly = U.points(NF, 0xffffff, 0.16), fly2 = U.points(NF, 0xffffff, 0.16);
       const dets = [0, 1].map(() => U.mesh(new THREE.TorusGeometry(0.35, 0.05, 8, 24), U.glow(0xf5b544)));
       dets.forEach(d => { d.rotation.y = Math.PI / 2; });
-      root.add(src, ...walls, screen, hits, fly, ...dets);
+      root.add(src, ...walls, screen, hits, fly, fly2, ...dets);
       const ch = chart({ title: '螢幕上的分布：累積（點）vs 理論（線）', x: [-W, W], y: [0, 1.15], xl: '螢幕位置', yl: '' });
       const bins = new Float32Array(64);
       let nh = 0, acc = 0, fl = Array.from({ length: NF }, () => ({ s: 2, z: 0, slit: 0 }));
@@ -286,19 +286,24 @@ export default [
           acc += dt * P.rate;
           for (; acc >= 1; acc--) { const f = fl.find(f => f.s >= 2); if (!f) break; f.s = 0; f.z = sampleZ(); f.slit = Math.random() < 0.5 ? 1 : -1; f.y = (Math.random() - 0.5) * 4.6; }
           fl.forEach((f, i) => {
-            if (f.s >= 2) { fly.pos[i * 3 + 1] = 1e4; return; }
+            if (f.s >= 2) { fly.pos[i * 3 + 1] = fly2.pos[i * 3 + 1] = 1e4; return; }
             f.s += dt * 4;
             if (f.s >= 2) {
               if (nh < MAXH) { hits.pos.set([L, f.y, f.z], nh * 3); nh++; hits.flush(nh); }
               bins[Math.min(63, Math.floor((f.z + W) / (2 * W) * 64))]++;
               return;
             }
-            // 前半段飛向雙縫中間（沒觀測）或被看到的那條縫，後半段飛向落點
-            const zs = P.watch ? f.slit * P.d / 2 : 0;
-            if (f.s < 1) { fly.pos[i * 3] = -9 + 9 * f.s; fly.pos[i * 3 + 1] = f.y * f.s * 0.1; fly.pos[i * 3 + 2] = zs * f.s; }
-            else { const u = f.s - 1; fly.pos[i * 3] = L * u; fly.pos[i * 3 + 1] = U.lerp(f.y * 0.1, f.y, u); fly.pos[i * 3 + 2] = U.lerp(zs, f.z, u); if (P.watch && u < 0.1) dets[f.slit > 0 ? 0 : 1].material.color.set(0xffffff); }
+            // 沒觀測：分成兩份同時穿過兩條縫，到螢幕再合成一個點；有觀測：只走被看到的那條縫（fly2 藏起來）
+            const zs = P.watch ? f.slit * P.d / 2 : P.d / 2;
+            const put = (pt, z0) => {
+              if (f.s < 1) { pt.pos[i * 3] = -9 + 9 * f.s; pt.pos[i * 3 + 1] = f.y * f.s * 0.1; pt.pos[i * 3 + 2] = z0 * f.s; }
+              else { const u = f.s - 1; pt.pos[i * 3] = L * u; pt.pos[i * 3 + 1] = U.lerp(f.y * 0.1, f.y, u); pt.pos[i * 3 + 2] = U.lerp(z0, f.z, u); }
+            };
+            put(fly, zs);
+            if (P.watch) fly2.pos[i * 3 + 1] = 1e4; else put(fly2, -zs);
+            if (P.watch && f.s >= 1 && f.s < 1.1) dets[f.slit > 0 ? 0 : 1].material.color.set(0xffffff);
           });
-          fly.flush();
+          fly.flush(); fly2.flush();
           const mx = Math.max(1, ...bins);
           const xs = Array.from({ length: 161 }, (_, i) => -W + i * W / 80);
           ch.draw([

@@ -121,7 +121,7 @@ export default [
     id: 'newton3', realm: 'classic', cat: '力學', title: '牛頓第三定律', en: "Newton's Third Law · Action–Reaction", keys: '作用力 反作用力',
     tex: '\\vec F_{12} = -\\vec F_{21}',
     explain: '<p>A 推 B 的同時，B 也用<b>大小相同、方向相反</b>的力推 A。兩個力作用在不同物體上，所以不會互相抵消。</p><p>力一樣大，但質量小的那個加速度大，所以飛得比較快：\\(m_1 v_1 = m_2 v_2\\)，總動量維持 0。</p>',
-    watch: ['推的瞬間兩支力箭頭永遠一樣長。', '把其中一人質量調大：他後退得慢，另一人飛得快。'],
+    watch: ['兩人的手貼在一起時（白光閃的地方）才有力，兩支紅箭頭永遠一樣長、方向相反。', '手臂打直推不動了，手一分開，力就消失，之後各自等速飄走。', '把其中一人質量調大：他後退得慢，另一人飛得快。'],
     params: [
       { k: 'm1', label: '左邊太空人質量 m₁', min: 40, max: 150, step: 1, v: 60, unit: 'kg' },
       { k: 'm2', label: '右邊太空人質量 m₂', min: 40, max: 150, step: 1, v: 100, unit: 'kg' },
@@ -144,27 +144,41 @@ export default [
         return g;
       };
       const A = body(AMBER), B = body(CYAN);
-      const fA = U.arrow(RED, 0.07), fB = U.arrow(RED, 0.07), vA = U.arrow(AMBER), vB = U.arrow(CYAN);
-      const lA = U.label('F₂₁', { color: '#ff6b6b' }), lB = U.label('F₁₂', { color: '#ff6b6b' });
-      root.add(stars, A, B, fA, fB, vA, vB, lA, lB);
-      let x1, x2, v1, v2, push;
-      const reset = () => { x1 = -0.6; x2 = 0.6; v1 = v2 = 0; push = 0; };
+      // 手臂：高度 1 的圓柱轉成水平，scale.y＝長度；從肩膀伸到手的位置
+      const arm = c => { const g = new THREE.Group(), m = U.cyl(0.09, 0.09, 1, U.mat(0xdfe3ea, { rough: 0.6 })), h = U.sphere(0.14, U.mat(c, { emissive: c, ei: 0.3 })); m.rotation.z = Math.PI / 2; g.add(m, h); g.set = (x0, x1) => { m.scale.y = Math.abs(x1 - x0); m.position.x = (x0 + x1) / 2; h.position.x = x1; }; g.position.y = 1.3; return g; };
+      const armA = arm(AMBER), armB = arm(CYAN);
+      const spark = U.sphere(0.22, U.glow(0xffffff, 0.85)); spark.position.y = 1.3;
+      const fA = U.arrow(RED, 0.08), fB = U.arrow(RED, 0.08), vA = U.arrow(AMBER), vB = U.arrow(CYAN);
+      const lA = U.label('F₂₁（B 推 A）', { color: '#ff6b6b' }), lB = U.label('F₁₂（A 推 B）', { color: '#ff6b6b' });
+      root.add(stars, A, B, armA, armB, spark, fA, fB, vA, vB, lA, lB);
+      const REST = 0.45, REACH = 1.1;   // 手臂平常長度、打直的長度（打直就推不下去，手分開）
+      let x1, x2, v1, v2, pushing, wait, t;
+      const sh = () => [x1 + 0.45 * Math.cbrt(P.m1 / 80), x2 - 0.45 * Math.cbrt(P.m2 / 80)];   // 兩人肩膀的 x
+      const reset = () => { const s1 = 0.45 * Math.cbrt(P.m1 / 80), s2 = 0.45 * Math.cbrt(P.m2 / 80); x1 = -(s1 + REST); x2 = s2 + REST; v1 = v2 = 0; pushing = false; wait = 1.2; t = 0; };
       reset();
-      const go = () => { reset(); push = 0.5; };
+      const go = () => { reset(); wait = 0; pushing = true; };
       return {
         actions: { '推！': go },
         update(dt) {
-          const pushing = push > 0;
-          if (pushing) { const d = Math.min(dt, push); v1 -= P.f / P.m1 * d; v2 += P.f / P.m2 * d; push -= dt; }
+          t += dt;
+          if (wait > 0 && (wait -= dt) <= 0) pushing = true;
+          if (pushing) { v1 -= P.f / P.m1 * dt; v2 += P.f / P.m2 * dt; }
           x1 += v1 * dt; x2 += v2 * dt;
-          if (x2 > 14 || x1 < -14) reset();
-          A.position.set(x1 - 0.2, 1, 0); B.position.set(x2 + 0.2, 1, 0);
+          let [s1, s2] = sh();
+          if (pushing && (s2 - s1) / 2 > REACH) pushing = false;   // 手臂打直，手離開
+          if (x2 > 14 || x1 < -14) { reset(); [s1, s2] = sh(); }
+          A.position.set(x1, 1, 0); B.position.set(x2, 1, 0);
           A.scale.setScalar(Math.cbrt(P.m1 / 80)); B.scale.setScalar(Math.cbrt(P.m2 / 80));
+          // 推的時候兩隻手貼在一起（接觸點 C）；放開後手縮回平常長度
+          const C = (s1 + s2) / 2, touching = pushing || wait > 0;
+          armA.set(s1, touching ? C : s1 + REST); armB.set(s2, touching ? C : s2 - REST);
+          spark.visible = pushing; spark.position.x = C; spark.scale.setScalar(1 + 0.35 * Math.sin(t * 30));
+          // 兩個力都畫在接觸點：作用在 A 的朝左、作用在 B 的朝右，一樣長
           const L = pushing ? P.f / 100 : 0;
-          fA.set(U.V(x1 - 0.2, 2.6, 0), U.V(-L, 0, 0)); fB.set(U.V(x2 + 0.2, 2.6, 0), U.V(L, 0, 0));
+          fA.set(U.V(C, 1.55, 0.25), U.V(-L, 0, 0)); fB.set(U.V(C, 1.05, 0.25), U.V(L, 0, 0));
           lA.visible = lB.visible = pushing;
-          lA.position.set(x1 - L / 2, 3.0, 0); lB.position.set(x2 + L / 2, 3.0, 0);
-          vA.set(U.V(x1 - 0.2, -0.4, 0), U.V(v1 * 1.5, 0, 0)); vB.set(U.V(x2 + 0.2, -0.4, 0), U.V(v2 * 1.5, 0, 0));
+          lA.position.set(C - L / 2, 2.4, 0.25); lB.position.set(C + L / 2, 0.6, 0.25);
+          vA.set(U.V(x1, -0.4, 0), U.V(v1 * 1.5, 0, 0)); vB.set(U.V(x2, -0.4, 0), U.V(v2 * 1.5, 0, 0));
           out({ 'v₁': v1.toFixed(2) + ' m/s', 'v₂': v2.toFixed(2) + ' m/s', 'm₁v₁': (P.m1 * v1).toFixed(1), 'm₂v₂': (P.m2 * v2).toFixed(1), '總動量': Math.abs(P.m1 * v1 + P.m2 * v2).toFixed(1) });
         },
       };
