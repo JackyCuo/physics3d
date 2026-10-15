@@ -394,7 +394,7 @@ export default [
     id: 'emwave', realm: 'classic', cat: '電磁', title: '電磁波', en: 'Electromagnetic Wave', keys: '光 電磁波 馬克士威 波長 頻率 光譜',
     tex: ['\\vec E = E_0 \\sin(kx - \\omega t)\\,\\hat y', '\\vec B = B_0 \\sin(kx - \\omega t)\\,\\hat z', 'c = \\lambda f = \\dfrac{1}{\\sqrt{\\mu_0\\varepsilon_0}},\\quad B_0 = \\dfrac{E_0}{c}'],
     explain: '<p>馬克士威發現：變化的電場會產生磁場，變化的磁場又會產生電場，兩者互相推著往前跑，不需要任何介質，這就是<b>電磁波</b>。他從方程式算出波速 \\(1/\\sqrt{\\mu_0\\varepsilon_0}\\)，剛好等於光速——光就是電磁波。</p><p>電場和磁場<b>互相垂直、也都垂直於前進方向</b>，而且同步達到最大。改變波長，就從無線電、紅外線、可見光一路變到 X 光；這裡只示範可見光的範圍。</p>',
-    watch: ['橘／彩色是電場（上下振動）、青色是磁場（前後振動），兩者永遠同時到最大。', '波長變短，頻率變高、光子能量變大，顏色從紅往紫移動。', '真實的 B₀ 只有 E₀ 的 1/c，這裡為了看得到把它放大畫。'],
+    watch: ['橘／彩色是電場（上下振動）、青色是磁場（前後振動），兩者永遠同時到最大。', '波長變短，波往前跑的速度不變（都是 c），但振動變快：頻率變高、光子能量變大，顏色從紅往紫移動。', '真實的 B₀ 只有 E₀ 的 1/c，這裡為了看得到把它放大畫。'],
     params: [
       { k: 'lam', label: '波長 λ', min: 380, max: 750, step: 5, v: 550, unit: 'nm' },
       { k: 'A', label: '電場振幅', min: 0.5, max: 2, step: 0.05, v: 1.4 },
@@ -413,7 +413,7 @@ export default [
       const col = new THREE.Color(), O = U.V(), T = U.V();
       return {
         update(dt, _, t) {
-          const ls = P.lam / 100, k = 2 * Math.PI / ls, w = 2 * Math.PI * 0.6;
+          const ls = P.lam / 100, k = 2 * Math.PI / ls, w = k * 3.3;   // 波速固定（c），波長短頻率就高
           wlColor(P.lam, col);
           eC.material.color.copy(col);
           eS.forEach(s => s.material.color.copy(col));

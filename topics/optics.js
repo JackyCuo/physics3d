@@ -83,7 +83,7 @@ export default [
     id: 'tir', realm: 'classic', cat: '光學', title: '全反射與光纖', en: 'Total Internal Reflection · Optical Fiber', keys: '全反射 光纖 臨界角 fiber 數值孔徑',
     tex: ['\\theta > \\theta_c = \\sin^{-1}\\dfrac{n_2}{n_1}', '\\sin\\theta_{\\max} = \\sqrt{n_1^2 - n_2^2}'],
     explain: '<p>光纖中間是折射率較高的<b>纖芯</b> \\(n_1\\)，外面包一層折射率較低的<b>包層</b> \\(n_2\\)。光從纖芯打到包層時，只要入射角大於臨界角，就會百分之百反射回來，一路彈跳把訊號送到幾十公里外。</p><p>不是所有角度射進來的光都能被困住：從端面進光的角度必須小於<b>接受角</b> \\(\\theta_{\\max}\\)，否則在牆上會漏出去。網路、內視鏡都是靠這個原理。</p>',
-    watch: ['把進光角度慢慢加大：超過接受角之後，每次碰壁都有一道光漏到包層外面。', '把包層折射率調得接近纖芯：臨界角變大，能困住的光的角度範圍變小。', '光點走的是鋸齒路線，角度越斜，走同樣距離要彈越多次。'],
+    watch: ['把進光角度慢慢加大：超過接受角之後，每次碰壁都有一道光漏進包層；到包層外緣再折射一次，太斜的話會被困在包層裡。', '把包層折射率調得接近纖芯：臨界角變大，能困住的光的角度範圍變小。', '光點走的是鋸齒路線，角度越斜，走同樣距離要彈越多次。'],
     params: [
       { k: 'th', label: '進光角度 θ', min: 0, max: 80, step: 0.5, v: 25, unit: '°' },
       { k: 'n1', label: '纖芯折射率 n₁', min: 1.3, max: 1.8, step: 0.01, v: 1.5 },
@@ -98,10 +98,11 @@ export default [
       const laser = U.cyl(0.18, 0.18, 1.2, U.mat(0x2a2d36, { metal: 0.7, rough: 0.3 }));
       const segs = Array.from({ length: 70 }, () => U.beam(RED, 0.035, U.glow(RED, 1)));
       const leaks = Array.from({ length: 40 }, () => U.beam(RED, 0.025, U.glow(0xff9aa8, 0.6)));
+      const leaks2 = Array.from({ length: 40 }, () => U.beam(RED, 0.025, U.glow(0xff9aa8, 0.6)));
       const pulse = U.sphere(0.1, U.glow(0xffd1dc));
       const lc = U.label('纖芯 n₁', { color: 'rgba(233,237,245,.6)', size: 0.34 }), lcl = U.label('包層 n₂', { color: 'rgba(200,180,255,.6)', size: 0.34 });
       lc.position.set(X1 - 1, 0, 0.9); lcl.position.set(X1 - 1, RCL + 0.35, 0);
-      root.add(core, clad, laser, pulse, lc, lcl, ...segs, ...leaks);
+      root.add(core, clad, laser, pulse, lc, lcl, ...segs, ...leaks, ...leaks2);
       const path = [];
       return {
         update(dt, _, t) {
@@ -119,13 +120,17 @@ export default [
             if (p.x + d.x * tw >= X1) { p = p.clone().addScaledVector(d, (X1 - p.x) / d.x); path.push([p, I]); break; }
             p = p.clone().addScaledVector(d, tw); path.push([p, I]);
             if (esc != null && li < leaks.length) {
-              const o = U.V(Math.sin(esc), Math.sign(d.y) * Math.cos(esc), 0);
-              leaks[li].visible = true; leaks[li].set(p, p.clone().addScaledVector(o, 2.5)); leaks[li].material.opacity = 0.7 * I * (1 - R); li++;
+              const sy = Math.sign(d.y), o = U.V(Math.sin(esc), sy * Math.cos(esc), 0), q = p.clone().addScaledVector(o, (RCL - RC) / Math.cos(esc));
+              const op = 0.7 * I * (1 - R), s2 = n2 * Math.sin(esc);   // 包層 → 空氣再折射一次，s2 ≥ 1 就在包層外緣全反射
+              leaks[li].visible = true; leaks[li].set(p, q); leaks[li].material.opacity = op;
+              leaks2[li].visible = s2 < 1;
+              if (s2 < 1) { leaks2[li].set(q, q.clone().addScaledVector(U.V(s2, sy * Math.sqrt(1 - s2 * s2), 0), 2)); leaks2[li].material.opacity = op; }
+              li++;
             }
             I *= R; d.y = -d.y;
             if (I < 0.03) break;
           }
-          for (; li < leaks.length; li++) leaks[li].visible = false;
+          for (; li < leaks.length; li++) leaks[li].visible = leaks2[li].visible = false;
           const exitDir = U.V(Math.cos(Math.asin(Math.min(1, n1 * Math.sin(al)))), Math.sign(d.y) * Math.min(1, n1 * Math.sin(al)), 0);
           const last = path.at(-1);
           if (last[0].x >= X1 - 1e-6) path.push([last[0].clone().addScaledVector(exitDir, 2.5), last[1]]);

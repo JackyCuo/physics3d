@@ -66,7 +66,8 @@ export default [
           for (const t of tubes) {
             const top = r(t.x), h = 0.25 + K * (Pa(t.x) + F.pressureDrop(RHO, 0.4, F.speedAt(2, 1, 0.45))) / (RHO * G);
             t.glass.position.set(t.x, top + 2.1, 0);
-            t.liq.scale.y = h; t.liq.position.set(t.x, top + h / 2, 0);
+            const H = R1 + h - top;   // 液面在中心線上方 R1 + h，基準相同才能比壓力
+            t.liq.scale.y = H; t.liq.position.set(t.x, top + H / 2, 0);
             t.lab.position.set(t.x, top + 4.6, 0);
           }
           const xs = Array.from({ length: 81 }, (_, i) => -L + 2 * L * i / 80);

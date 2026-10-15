@@ -47,7 +47,7 @@ export default [
     id: 'leastaction', realm: 'theory', cat: '分析力學與統計', title: '最小作用量原理', en: 'Principle of Least Action', keys: '拉格朗日 lagrangian 作用量 action 變分 hamilton',
     tex: ['S = \\int_{t_1}^{t_2} L\\,dt,\\quad L = T - V', '\\delta S = 0 \\;\\Rightarrow\\; \\dfrac{d}{dt}\\dfrac{\\partial L}{\\partial \\dot q} - \\dfrac{\\partial L}{\\partial q} = 0'],
     explain: '<p>換一個角度看力學：球從地面丟上去、2 秒後落回原地，中間可以想像有無限多種走法。對每一種走法算<b>作用量</b> \\(S = \\int (\\text{動能} - \\text{位能})\\,dt\\)。</p><p>大自然真正走的那一條，是讓 \\(S\\) <b>取極值（這裡是最小）</b>的路徑。從這個原理可以推出牛頓定律（歐拉–拉格朗日方程），也能推出光學、相對論、量子力學——現代物理幾乎都從作用量出發。</p>',
-    watch: ['橘色是真實的拋物線，紫色是你調出來的試探路徑。', '把 ε 往正或負推，左下的 S 都會變大：真實路徑在曲線最低點。', '所有路徑起點、終點、所花時間都一樣，差別只在中間怎麼走。'],
+    watch: ['橫軸是時間、縱軸是高度：球其實只是垂直上下，畫成這樣才看得到整條路徑。', '橘色是真實的拋物線，紫色是你調出來的試探路徑。', '把 ε 往正或負推，左下的 S 都會變大：真實路徑在曲線最低點。', '所有路徑起點、終點、所花時間都一樣，差別只在中間怎麼走。'],
     params: [
       { k: 'eps', label: '路徑偏移 ε', min: -3, max: 3, step: 0.05, v: 1.5, unit: 'm' },
       { k: 'n', label: '偏移形狀', options: [[1, '一個鼓包'], [2, '一上一下'], [3, '三段波']], v: 1 },
@@ -62,7 +62,9 @@ export default [
       const bT = U.sphere(0.2, U.mat(0x111111, { emissive: AMBER })), bE = U.sphere(0.2, U.mat(0x111111, { emissive: VIO }));
       const ends = [0, T].map(t => { const m = U.cyl(0.25, 0.25, 0.05, U.glow(0xffffff, 0.6)); m.position.copy(pos(t, 0, 1)); return m; });
       const lT = U.label('', { color: '#f5b544', size: 0.36 }), lE = U.label('', { color: '#c9b8ff', size: 0.36 });
-      root.add(truth, trial, ...fan, bT, bE, ...ends, lT, lE);
+      const tAx = U.arrow(0xffffff, 0.02).set(U.V(-T / 2 * SX - 0.3, -0.25, 0), U.V(T * SX + 0.9, 0, 0));
+      const tL = U.label('時間 t →', { color: 'rgba(233,237,245,.7)', size: 0.34 }); tL.position.set(T / 2 * SX + 0.2, -0.65, 0);
+      root.add(truth, trial, ...fan, bT, bE, ...ends, lT, lE, tAx, tL);
       const ch = chart({ title: '作用量 S(ε)', x: [-3, 3], y: [-35, 0], xl: 'ε', yl: 'S' });
       let key = '';
       return {

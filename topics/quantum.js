@@ -134,13 +134,18 @@ export default [
       root.add(ball, halo, ph);
       const ch = chart({ title: '光譜：普朗克（實線）vs 古典（虛線）', x: [0, 3000], y: [0, 1.6], xl: 'λ (nm)', yl: '' });
       let acc = 0, next = 0;
-      const sample = T => { const peak = F.planck(F.wien(T), T); for (;;) { const nm = 100 + Math.random() * 2900; if (Math.random() * peak < F.planck(nm * 1e-9, T)) return nm; } };
+      // 光子個數的分布 ∝ λ·B_λ（B_λ 是能量分布，除以每顆光子的能量 hc/λ）
+      let pkT = 0, pk = 0;
+      const sample = T => {
+        if (T !== pkT) { pkT = T; pk = 0; for (let nm = 100; nm <= 3000; nm += 10) pk = Math.max(pk, nm * F.planck(nm * 1e-9, T)); pk *= 1.02; }
+        for (;;) { const nm = 100 + Math.random() * 2900; if (Math.random() * pk < nm * F.planck(nm * 1e-9, T)) return nm; }
+      };
       return {
         update(dt, P) {
           const T = P.T, col = bbRGB(T), bright = Math.min(1, (T / 5000) ** 1.5);
           ball.material.emissive.setRGB(col[0] * bright, col[1] * bright, col[2] * bright);
           halo.material.color.setRGB(...col); halo.material.opacity = 0.05 + 0.15 * bright;
-          acc += dt * 40 * (T / 5800) ** 4 * 3;
+          acc += dt * 120 * (T / 5800) ** 3;   // 每秒光子數 ∝ T³
           for (; acc >= 1; acc--) {
             const k = next++ % N, p = ps[k];
             p.d.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
@@ -192,16 +197,16 @@ export default [
           const [r, g, b] = nmRGB(P.nm), KE = F.photoKE(P.nm, P.phi);
           phP.material.color.setRGB(r, g, b); cone.material.color.setRGB(r, g, b);
           acc += dt * P.I * 8;
-          for (; acc >= 1; acc--) { const p = phs[ip++ % NPH]; p.s = 0; p.to.set(0, 2.5 + (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4); }
+          for (; acc >= 1; acc--) { const p = phs[ip++ % NPH]; p.s = 0; p.to.set(-0.2, 2.5 + (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4); }
           phs.forEach((p, i) => {
             if (p.s >= 1) { phP.pos[i * 3 + 1] = 1e4; return; }
             p.s += dt * 0.9;
-            if (p.s >= 1 && KE > 0) { const e = es[ie++ % NE]; e.on = true; e.p.copy(p.to).setX(0.25); const sp = Math.sqrt(KE) * 2.2; e.v.set(Math.random() * 0.6 + 0.6, Math.random() - 0.5, Math.random() - 0.5).normalize().multiplyScalar(sp); }
+            if (p.s >= 1 && KE > 0) { const e = es[ie++ % NE]; e.on = true; e.p.copy(p.to).setX(-0.25); const sp = Math.sqrt(KE) * 2.2; e.v.set(-(Math.random() * 0.6 + 0.6), Math.random() - 0.5, Math.random() - 0.5).normalize().multiplyScalar(sp); }
             const q = U.V().lerpVectors(LS, p.to, Math.min(1, p.s));
             phP.pos[i * 3] = q.x; phP.pos[i * 3 + 1] = q.y; phP.pos[i * 3 + 2] = q.z;
           });
           es.forEach((e, i) => {
-            if (e.on) { e.p.addScaledVector(e.v, dt); if (e.p.x > 12) e.on = false; }
+            if (e.on) { e.p.addScaledVector(e.v, dt); if (e.p.x < -12) e.on = false; }
             eP.pos[i * 3] = e.p.x; eP.pos[i * 3 + 1] = e.on ? e.p.y : 1e4; eP.pos[i * 3 + 2] = e.p.z;
           });
           phP.flush(); eP.flush();

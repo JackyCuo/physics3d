@@ -241,7 +241,7 @@ export default [
   {
     id: 'centripetal', realm: 'classic', cat: '力學', title: '圓周運動與向心力', en: 'Circular Motion · Centripetal Force', keys: '向心力 向心加速度 離心',
     tex: ['a_c = \\dfrac{v^2}{r} = \\omega^2 r', 'F_c = m\\dfrac{v^2}{r}'],
-    explain: '<p>等速率繞圈的物體，速率沒變，但<b>方向一直在變</b>，所以仍然有加速度，方向永遠指向圓心，叫做向心加速度。提供這個力的是繩子的張力。</p><p>所謂「離心力」其實不存在：剪斷繩子，球不會往外飛，而是沿著<b>切線</b>直直飛出去——就是牛頓第一定律。</p>',
+    explain: '<p>球放在<b>無摩擦的冰桌</b>上，用繩子綁著等速率繞圈：速率沒變，但<b>方向一直在變</b>，所以仍然有加速度，方向永遠指向圓心，叫做向心加速度。提供這個力的是繩子的張力。</p><p>所謂「離心力」其實不存在：剪斷繩子，球不會往外飛，而是沿著<b>切線</b>直直飛出去——就是牛頓第一定律。</p>',
     watch: ['紅色箭頭（向心力）永遠指向中心，青色（速度）永遠沿切線。', '速度加倍，向心力變 4 倍（左下圖是拋物線）。', '按「剪斷繩子」看球沿切線飛走。'],
     params: [
       { k: 'r', label: '半徑 r', min: 1, max: 4, step: 0.05, v: 2.5, unit: 'm' },
@@ -257,7 +257,9 @@ export default [
       const rope = U.beam(0xcfd6e4, 0.015);
       const ring = U.line(97, WHITE, 0.35, true);
       const vA = U.arrow(CYAN), fA = U.arrow(RED, 0.06);
-      root.add(post, hub, ball, rope, ring, vA, fA);
+      // 無摩擦桌面：重力和桌面支撐力抵消，水平方向只剩繩子的拉力；剪斷後球沿桌面直線滑走
+      const table = U.cyl(20, 20, 0.04, U.mat(0x9fd8ff, { opacity: 0.1, rough: 0.05, metal: 0.3 }), 64);
+      root.add(post, hub, ball, rope, ring, vA, fA, table);
       const ch = chart({ title: '向心力 F = mv²/r', x: [0, 6], y: [0, 10], xl: 'v (m/s)', yl: 'F (N)' });
       let phi = 0, cut = -1, cp = U.V(), cv = U.V();
       return {
@@ -266,6 +268,7 @@ export default [
           const C = U.V(0, H, 0);
           ring.set(Array.from({ length: 97 }, (_, i) => U.V(P.r * Math.cos(i / 96 * 6.2832), H, P.r * Math.sin(i / 96 * 6.2832))));
           ball.scale.setScalar(Math.cbrt(P.m / 0.5));
+          table.position.y = H - 0.25 * ball.scale.x - 0.02;
           if (cut < 0) {
             phi += P.v / P.r * dt;
             cp.set(P.r * Math.cos(phi), H, P.r * Math.sin(phi));
@@ -353,7 +356,7 @@ export default [
       const floor = U.box(10, 0.1, 2, U.mat(0x1a1d26, { rough: 0.9 })); floor.position.set(0, -0.05, 0);
       const block = U.box(1, 1, 1, U.mat(0x30343f, { metal: 0.5, rough: 0.35, emissive: AMBER, ei: 0.08 }));
       const spring = U.line(240, 0xcfd6e4);
-      const eq = U.line(2, WHITE, 0.35, true).set([U.V(0, 0, 1), U.V(0, 2, 1)]);
+      const eq = U.line(2, WHITE, 0.35, true).set([U.V(0.5, 0, 1), U.V(0.5, 2, 1)]);
       const fA = U.arrow(RED, 0.06), vA = U.arrow(CYAN);
       root.add(wall, floor, block, spring, eq, fA, vA);
       const ch = chart({ title: '能量：位能（青）動能（橘）總和（白）', x: [0, 6], y: [0, 1], xl: 't (s)', yl: 'E' });

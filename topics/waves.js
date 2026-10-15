@@ -97,7 +97,7 @@ export default [
       for (let i = 0; i < NP; i++) { pa.push(U.V()); pb.push(U.V()); pr.push(U.V()); pl.push(U.V()); }
       return {
         update(dt, _, t) {
-          const n = Math.round(P.n), k = n * Math.PI / L, w = 1.6 * n;
+          const n = Math.round(P.n), k = n * Math.PI / L, w = 1.6 * n * Math.sqrt(P.T / 80);   // f ∝ n√T
           xs.forEach((x, i) => {
             const u = x + L / 2, s = Math.sin(k * u);
             str.pos[i * 3] = x; str.pos[i * 3 + 1] = 2 * A * s * Math.cos(w * t) * 0.5; str.pos[i * 3 + 2] = 0;
