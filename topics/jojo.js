@@ -66,3 +66,25 @@ export function steelBall(U, THREE, r = 1.1) {
   for (const a of [0, Math.PI / 3, 2 * Math.PI / 3]) { const t = U.mesh(new THREE.TorusGeometry(r * 1.01, r * 0.036, 6, 48), U.mat(0x555a66, { metal: 0.6 })); t.rotation.y = Math.PI / 2; t.rotation.x = a; g.add(t); }
   return g;
 }
+// 喬納森·喬斯達（第一部，波紋使者）：魁梧、深藍短髮
+export function jonathan(U, THREE) {
+  const g = new THREE.Group();
+  const body = U.cyl(0.5, 0.42, 1.7, U.mat(0x3a4a6a, { rough: 0.7 })); body.position.y = 0.85;
+  const head = U.sphere(0.36, U.mat(0xf1d2b3, { rough: 0.6 })); head.position.y = 2.05;
+  const face = U.face(0.36); face.position.y = 2.05;
+  const hair = U.mesh(new THREE.SphereGeometry(0.39, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.4), U.mat(0x1c2440, { rough: 0.8 })); hair.position.y = 2.05;
+  g.add(body, head, face, hair); g.face = face;
+  return g;
+}
+// 威爾·A·齊貝林男爵（第一部，波紋老師）：高禮帽、八字鬍
+export function zeppeli(U, THREE) {
+  const g = new THREE.Group(), black = U.mat(0x1a1a20, { rough: 0.6 });
+  const body = U.cyl(0.34, 0.44, 1.6, U.mat(0x6a4a2a, { rough: 0.7 })); body.position.y = 0.8;
+  const head = U.sphere(0.34, U.mat(0xf1d2b3, { rough: 0.6 })); head.position.y = 1.95;
+  const face = U.face(0.34); face.position.y = 1.95;
+  const hat = U.cyl(0.3, 0.3, 0.6, black); hat.position.y = 2.5;
+  const brim = U.cyl(0.5, 0.5, 0.04, black); brim.position.y = 2.22;
+  const stache = U.box(0.42, 0.07, 0.06, U.mat(0xe0c060)); stache.position.set(0, 1.86, 0.33);
+  g.add(body, head, face, hat, brim, stache); g.face = face;
+  return g;
+}
