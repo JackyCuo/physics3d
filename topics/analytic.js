@@ -230,7 +230,7 @@ export default [
       const pivot = U.sphere(0.1, U.mat(0xdfe3ea, { metal: 0.8 })); pivot.position.copy(O);
       const bar = U.box(1.6, 0.08, 0.08, U.mat(0x3a3f4c, { metal: 0.7 })); bar.position.copy(O).add(U.V(0, 0.05, 0));
       const pends = cols.map((col, k) => {
-        const z = k ? 0.12 : -0.12;
+        const z = k ? 0.22 : -0.22;   // 兩個擺錘半徑 0.17，隔 0.44 才不互穿；也避開中間的橫桿
         const r1 = U.beam(0, 0.035, U.mat(0xdfe3ea, { metal: 0.6 })), r2 = U.beam(0, 0.035, U.mat(0xdfe3ea, { metal: 0.6 }));
         const b1 = U.sphere(0.13, U.mat(0x111111, { emissive: col })), b2 = U.sphere(0.17, U.mat(0x111111, { emissive: col }));
         const tr = U.line(400, col, 0.75);

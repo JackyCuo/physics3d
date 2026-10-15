@@ -216,7 +216,7 @@ export default [
             vx += a * x * h; vz += a * z * h; x += vx * h; z += vz * h;
           }
           const r = Math.hypot(x, z), v = Math.hypot(vx, vz), E = v * v / 2 - GM / r;
-          if (r < 0.35 + 0.2 * P.M || r > 16) launch();
+          if (r < 0.35 + 0.2 * P.M + 0.25 || r > 16) launch();   // 小天體半徑 0.25：表面碰到恆星就重來，不穿進去
           body.position.copy(pt(x, z, P.M)).add(U.V(0, 0.25, 0));
           const last = pts.at(-1);
           if (!last || last.distanceTo(body.position) > 0.08) { pts.push(body.position.clone()); if (pts.length > 800) pts.shift(); }

@@ -171,13 +171,13 @@ export default [
           A.scale.setScalar(Math.cbrt(P.m1 / 80)); B.scale.setScalar(Math.cbrt(P.m2 / 80));
           // 推的時候兩隻手貼在一起（接觸點 C）；放開後手縮回平常長度
           const C = (s1 + s2) / 2, touching = pushing || wait > 0;
-          armA.set(s1, touching ? C : s1 + REST); armB.set(s2, touching ? C : s2 - REST);
+          armA.set(s1, touching ? C - 0.14 : s1 + REST - 0.14); armB.set(s2, touching ? C + 0.14 : s2 - REST + 0.14);   // 手半徑 0.14，掌心剛好貼在 C
           spark.visible = pushing; spark.position.x = C; spark.scale.setScalar(1 + 0.35 * Math.sin(t * 30));
           // 兩個力都畫在接觸點：作用在 A 的朝左、作用在 B 的朝右，一樣長
           const L = pushing ? P.f / 100 : 0;
-          fA.set(U.V(C, 1.55, 0.25), U.V(-L, 0, 0)); fB.set(U.V(C, 1.05, 0.25), U.V(L, 0, 0));
+          fA.set(U.V(C, 1.55, 0.9), U.V(-L, 0, 0)); fB.set(U.V(C, 1.05, 0.9), U.V(L, 0, 0));   // z 0.9：在軀幹前面，不穿過身體
           lA.visible = lB.visible = pushing;
-          lA.position.set(C - L / 2, 2.4, 0.25); lB.position.set(C + L / 2, 0.6, 0.25);
+          lA.position.set(C - L / 2, 2.4, 0.9); lB.position.set(C + L / 2, 0.6, 0.9);
           vA.set(U.V(x1, -0.4, 0), U.V(v1 * 1.5, 0, 0)); vB.set(U.V(x2, -0.4, 0), U.V(v2 * 1.5, 0, 0));
           out({ 'v₁': v1.toFixed(2) + ' m/s', 'v₂': v2.toFixed(2) + ' m/s', 'm₁v₁': (P.m1 * v1).toFixed(1), 'm₂v₂': (P.m2 * v2).toFixed(1), '總動量': Math.abs(P.m1 * v1 + P.m2 * v2).toFixed(1) });
         },
@@ -196,7 +196,7 @@ export default [
     cam: [8, 6, 27], target: [8, 3, 0],
     setup({ root, U, P, out, chart }) {
       const G = 9.8;
-      const ground = U.box(26, 0.1, 6, U.mat(0x1a1d26, { rough: 0.9 })); ground.position.set(9, -0.05, 0);
+      const ground = U.box(26, 0.1, 6, U.mat(0x1a1d26, { rough: 0.9 })); ground.position.set(9, -0.27, 0);   // 頂面 −0.22 = 球的半徑，落地時球剛好貼地
       const cannon = U.cyl(0.18, 0.26, 1.2, U.mat(0x30343f, { metal: 0.7, rough: 0.3 }));
       const base = U.sphere(0.45, U.mat(0x30343f, { metal: 0.6 }));
       const ball = U.sphere(0.22, U.mat(0x222222, { emissive: AMBER, ei: 0.8 }));
@@ -218,7 +218,7 @@ export default [
           cannon.rotation.z = th - Math.PI / 2;
           cannon.position.set(0.6 * c, 0.6 * s, 0);
           path.set(Array.from({ length: 120 }, (_, i) => { const q = T * i / 119; return U.V(P.v * c * q, P.v * s * q - G * q * q / 2, 0); }));
-          flag.position.set(R, 0.6, 0); landL.set(`R = ${R.toFixed(1)} m`); landL.position.set(R, 1.6, 0);
+          flag.position.set(R, 0.38, 0); landL.set(`R = ${R.toFixed(1)} m`); landL.position.set(R, 1.6, 0);
           if (tt < T) tt = Math.min(T, tt + dt); else if ((wait += dt) > 1.2) reset();
           const x = P.v * c * tt, y = P.v * s * tt - G * tt * tt / 2, vyv = P.v * s - G * tt, o = U.V(x, y, 0);
           ball.position.copy(o);
@@ -302,12 +302,13 @@ export default [
     cam: [0, 4.5, 12], target: [0, 4, 0],
     setup({ root, U, P, out, chart }) {
       const G = 9.8, PIV = U.V(0, 5.5, 0);
-      const bar = U.box(2.4, 0.12, 0.5, U.mat(0x30343f, { metal: 0.7 })); bar.position.copy(PIV).y += 0.06;
+      const bar = U.box(2.4, 0.12, 0.5, U.mat(0x30343f, { metal: 0.7 })); bar.position.set(PIV.x, PIV.y + 0.06, -0.62);   // 在擺動平面後面
+      const axle = U.cyl(0.05, 0.05, 0.4, U.mat(0x8a90a0, { metal: 0.8 })); axle.rotation.x = Math.PI / 2; axle.position.set(PIV.x, PIV.y, -0.2);
       const rod = U.beam(0xcfd6e4, 0.02);
       const bob = U.sphere(0.28, U.mat(0x222222, { emissive: AMBER, ei: 0.75, metal: 0.4 }));
       const arc = U.line(80, AMBER, 0.35, true), vert = U.line(2, WHITE, 0.25, true);
       const fA = U.arrow(RED, 0.045);
-      root.add(bar, rod, bob, arc, vert, fA);
+      root.add(bar, axle, rod, bob, arc, vert, fA);
       const ch = chart({ title: '角度 θ(t)：真實（橘）vs 小角度近似（白）', x: [0, 8], y: [-1, 1], xl: 't (s)', yl: 'θ' });
       let th, w, tt, hist, lastX, Tm;
       const reset = () => { th = P.th0 * Math.PI / 180; w = 0; tt = 0; hist = []; lastX = null; Tm = null; };
@@ -564,13 +565,13 @@ export default [
     watch: ['軌道被切成 12 塊扇形，每一塊都是相同時間掃過的——形狀不同但面積一樣。', '離心率 e 調大：近日點附近行星明顯加速。', '左下圖：不管半長軸多少，(a³, T²) 都落在同一條直線上。'],
     params: [
       { k: 'a', label: '半長軸 a', min: 2, max: 6, step: 0.05, v: 4 },
-      { k: 'e', label: '離心率 e', min: 0, max: 0.9, step: 0.01, v: 0.55 },
+      { k: 'e', label: '離心率 e', min: 0, max: 0.75, step: 0.01, v: 0.55 },
     ],
     grid: false, cam: [-2, 12, 10], target: [-2, 0, 0],
     setup({ THREE, root, U, P, out, chart }) {
       const GM = 70, K = 12, SUB = 16;
-      const sun = U.sphere(0.4, U.glow(AMBER)), halo = U.sphere(0.7, U.glow(AMBER, 0.15));
-      const planet = U.sphere(0.2, U.mat(0x222222, { emissive: CYAN, ei: 0.8 }));
+      const sun = U.sphere(0.25, U.glow(AMBER)), halo = U.sphere(0.45, U.glow(AMBER, 0.15));   // 近日點最近 0.5 > 太陽 0.25 + 行星 0.16
+      const planet = U.sphere(0.16, U.mat(0x222222, { emissive: CYAN, ei: 0.8 }));
       const orbit = U.line(201, WHITE, 0.5);
       const fanGeo = new THREE.BufferGeometry();
       fanGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(K * SUB * 9), 3));

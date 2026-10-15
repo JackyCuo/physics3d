@@ -149,13 +149,14 @@ export default [
         update() {
           const x1 = -P.r * S / 2, x2 = P.r * S / 2, Fn = F.coulomb(P.q1 * 1e-6, P.q2 * 1e-6, P.r);
           b1.position.set(x1, Y, 0); b2.position.set(x2, Y, 0);
-          b1.scale.setScalar(0.14 + 0.06 * Math.abs(P.q1)); b2.scale.setScalar(0.14 + 0.06 * Math.abs(P.q2));
+          const rmax = P.r * S * 0.45;   // 距離很近時兩顆球不能疊在一起
+          b1.scale.setScalar(Math.min(rmax, 0.14 + 0.06 * Math.abs(P.q1))); b2.scale.setScalar(Math.min(rmax, 0.14 + 0.06 * Math.abs(P.q2)));
           b1.material.emissive.set(colOf(P.q1)); b2.material.emissive.set(colOf(P.q2));
           const L = Math.min(3.2, 0.6 * Math.sqrt(Math.abs(Fn))), s = Fn > 0 ? 1 : -1;   // 排斥時向外
-          a1.set(U.V(x1, Y + 0.7, 0), U.V(-s * L, 0, 0)); a2.set(U.V(x2, Y + 0.7, 0), U.V(s * L, 0, 0));
-          l1.set(`q₁ ${P.q1 > 0 ? '+' : ''}${P.q1.toFixed(1)} μC`); l1.position.set(x1, Y - 0.75, 0);
-          l2.set(`q₂ ${P.q2 > 0 ? '+' : ''}${P.q2.toFixed(1)} μC`); l2.position.set(x2, Y - 0.75, 0);
-          ruler.set([U.V(x1, Y, 0), U.V(x2, Y, 0)]); lr.set(`r = ${P.r.toFixed(2)} m`); lr.position.set(0, Y + 0.35, 0.6);
+          a1.set(U.V(x1, Y + 0.65, 0), U.V(-s * L, 0, 0)); a2.set(U.V(x2, Y + 1.0, 0), U.V(s * L, 0, 0));   // 高度錯開：相吸時兩支都朝內，才不會疊成一支
+          l1.set(`q₁ ${P.q1 > 0 ? '+' : ''}${P.q1.toFixed(1)} μC`); l1.position.set(Math.min(x1, -1.3), Y - 0.75, 0);   // 靠很近時標籤往外推，不疊字
+          l2.set(`q₂ ${P.q2 > 0 ? '+' : ''}${P.q2.toFixed(1)} μC`); l2.position.set(Math.max(x2, 1.3), Y - 0.75, 0);
+          ruler.set([U.V(x1, Y, 0), U.V(x2, Y, 0)]); lr.set(`r = ${P.r.toFixed(2)} m`); lr.position.set(0, Y - 1.25, 0.6);
           const cs = [{ q: P.q1, x: x1, y: Y, z: 0 }, { q: P.q2, x: x2, y: Y, z: 0 }];
           for (const a of grid) {
             const E = F.field(cs, [a.p.x, Y, a.p.z]), v = U.V(E[0], 0, E[2]), n = v.length();
