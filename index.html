@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>物理 3D 實驗室</title>
+<meta name="theme-color" content="#050507">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='4' fill='%23f5b544'/%3E%3Cellipse cx='16' cy='16' rx='13' ry='5' fill='none' stroke='%234fd1e8' stroke-width='1.6'/%3E%3Cellipse cx='16' cy='16' rx='13' ry='5' fill='none' stroke='%23a78bfa' stroke-width='1.6' transform='rotate(60 16 16)'/%3E%3Cellipse cx='16' cy='16' rx='13' ry='5' fill='none' stroke='%23f5b544' stroke-width='1.6' transform='rotate(120 16 16)'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<script src="vendor/katex/katex.min.js"></script>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
+<style>
+@font-face { font-family: Geist; src: url(vendor/Geist-Variable.woff2) format('woff2'); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: 'Geist Mono'; src: url(vendor/GeistMono-Variable.woff2) format('woff2'); font-weight: 100 900; font-display: swap; }
+:root {
+  --bg: #050507; --ink: #e9edf5; --mute: rgba(233,237,245,.56); --faint: rgba(233,237,245,.34);
+  --hair: rgba(255,255,255,.07); --shell: rgba(255,255,255,.025); --core: rgba(13,14,20,.82);
+  --acc: #f5b544; --ease: cubic-bezier(.32,.72,0,1);
+  --sans: Geist, "Noto Sans CJK TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --mono: 'Geist Mono', ui-monospace, monospace;
+  color-scheme: dark;
+}
+body[data-realm=theory] { --acc: #a78bfa; }
+body[data-realm=quantum] { --acc: #4fd1e8; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font: 14px/1.6 var(--sans); -webkit-font-smoothing: antialiased;
+  display: grid; grid-template-columns: 300px 1fr 400px; height: 100dvh; overflow: hidden;
+}
+body::before { /* 依領域變色的光暈 */
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: -1;
+  background: radial-gradient(60vw 50vh at 55% 30%, color-mix(in srgb, var(--acc) 13%, transparent), transparent 70%),
+              radial-gradient(40vw 40vh at 15% 90%, rgba(80,90,180,.10), transparent 70%);
+  transition: background 1.2s var(--ease);
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+.shell { background: var(--shell); border: 1px solid var(--hair); border-radius: 22px; padding: 5px; }
+.core { background: var(--core); border-radius: 17px; box-shadow: inset 0 1px 1px rgba(255,255,255,.07); }
+.eyebrow { display: inline-block; font: 500 12px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--acc);
+  border: 1px solid color-mix(in srgb, var(--acc) 35%, transparent); border-radius: 99px; padding: 6px 12px; }
+
+/* ---------- 側欄 ---------- */
+#side { display: flex; flex-direction: column; padding: 18px 10px 18px 18px; min-height: 0; }
+.brand { display: flex; align-items: center; gap: 12px; padding: 6px 6px 18px; }
+.brand svg { width: 34px; height: 34px; flex: none; }
+.brand b { display: block; font-size: 16px; letter-spacing: .02em; }
+.brand small { color: var(--faint); font: 12px var(--mono); }
+#realms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; }
+#realms button { background: none; border: 0; border-radius: 13px; padding: 9px 4px 7px; min-height: 44px; color: var(--mute);
+  transition: background .5s var(--ease), color .5s var(--ease); display: grid; gap: 1px; }
+#realms button small { font: 12px var(--mono); color: var(--faint); }
+#realms button[data-r=classic] { --c: #f5b544; } #realms button[data-r=theory] { --c: #a78bfa; } #realms button[data-r=quantum] { --c: #4fd1e8; }
+#realms button.on { background: color-mix(in srgb, var(--c) 14%, transparent); color: var(--c); }
+#realms button.on small { color: var(--c); opacity: .7; }
+.search { margin: 12px 0 6px; position: relative; }
+.search input { width: 100%; background: var(--shell); border: 1px solid var(--hair); border-radius: 99px; padding: 12px 16px 12px 38px;
+  color: var(--ink); font: 16px var(--sans); outline: none; transition: border-color .4s var(--ease); }
+.search input:focus { border-color: color-mix(in srgb, var(--acc) 50%, transparent); }
+.search svg { position: absolute; left: 14px; top: 50%; translate: 0 -50%; width: 16px; height: 16px; }
+#list { overflow-y: auto; flex: 1; padding: 4px 6px 30px 0; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.1) transparent; }
+#list h3 { font: 500 12px var(--mono); letter-spacing: .16em; color: var(--faint); margin: 20px 10px 8px; text-transform: uppercase; }
+.item { display: flex; flex-direction: column; justify-content: center; min-height: 48px; padding: 7px 12px; border-radius: 14px; text-decoration: none; color: var(--ink);
+  transition: background .5s var(--ease), transform .5s var(--ease); }
+.item small { color: var(--faint); font-size: 12px; line-height: 1.3; }
+.item[data-r=classic] { --c: #f5b544; } .item[data-r=theory] { --c: #a78bfa; } .item[data-r=quantum] { --c: #4fd1e8; }
+.item.on { background: color-mix(in srgb, var(--c) 12%, transparent); box-shadow: inset 2px 0 0 var(--c); }
+.item.on span { color: var(--c); }
+@media (hover: hover) { .item:hover { background: rgba(255,255,255,.04); transform: translateX(2px); } }
+.empty { color: var(--faint); padding: 20px 10px; }
+
+/* ---------- 3D 畫面 ---------- */
+#stage { position: relative; min-width: 0; min-height: 0; margin: 12px 0; border-radius: 26px; overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,.035), transparent 60%), rgba(8,9,13,.6); border: 1px solid var(--hair); }
+#stage canvas:first-child { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+#dock { position: absolute; left: 50%; bottom: 16px; translate: -50% 0; display: flex; align-items: center; gap: 6px; padding: 5px;
+  background: rgba(14,15,21,.7); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid var(--hair); border-radius: 99px; }
+.ib { width: 44px; height: 44px; border-radius: 99px; border: 0; background: rgba(255,255,255,.05); display: grid; place-items: center;
+  transition: transform .4s var(--ease), background .4s var(--ease); }
+.ib svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.ib:active { transform: scale(.94); }
+#play { background: var(--acc); color: #0b0b0f; }
+#play svg { stroke-width: 2.2; }
+#play svg path[d^="M7"] { fill: currentColor; }
+#speed { display: flex; gap: 2px; padding: 0 2px; }
+#speed button { min-width: 44px; height: 44px; border: 0; background: none; border-radius: 99px; color: var(--mute); font: 12px var(--mono); transition: background .4s var(--ease), color .4s var(--ease); }
+#speed button.on { background: rgba(255,255,255,.09); color: var(--ink); }
+@media (hover: hover) { .ib:hover { background: rgba(255,255,255,.1); } #play:hover { background: var(--acc); filter: brightness(1.1); } }
+#hint { position: absolute; top: 16px; left: 18px; font: 12px var(--mono); color: var(--faint); pointer-events: none; }
+#chart { position: absolute; left: 14px; bottom: 82px; width: min(340px, 46%); padding: 10px 10px 6px; border-radius: 18px;
+  background: rgba(10,11,16,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid var(--hair); cursor: pointer; }
+#chart.min canvas { display: none; }
+#chart.min b::after { content: ' ▸ 點開'; color: var(--faint); }
+#chart b { font: 500 12px var(--sans); color: var(--mute); display: block; padding: 0 4px 2px; min-height: 26px; }
+#chart canvas { width: 100%; height: 150px; display: block; }
+
+/* ---------- 右側說明 ---------- */
+#panel { overflow-y: auto; padding: 22px 20px 40px 16px; min-height: 0; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.1) transparent; }
+#panel > * { animation: rise .9s var(--ease) both; }
+#panel > :nth-child(2) { animation-delay: .05s; } #panel > :nth-child(3) { animation-delay: .1s; } #panel > :nth-child(4) { animation-delay: .15s; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+#title { font-size: 30px; line-height: 1.15; margin: 16px 0 4px; font-weight: 600; letter-spacing: -.01em; }
+#en { color: var(--faint); font: 13px var(--mono); margin: 0 0 18px; }
+.card { margin-bottom: 14px; }
+.card .core { padding: 16px 18px; }
+.card h4 { margin: 0 0 10px; font: 500 12px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--faint); }
+#formula { overflow-x: auto; overflow-y: hidden; padding: 4px 0; color: #fff; }
+#formula .katex-display { margin: 6px 0; }
+#formula .katex { font-size: 1.28em; }
+.formulaCard .core { background: linear-gradient(160deg, color-mix(in srgb, var(--acc) 10%, rgba(13,14,20,.9)), rgba(13,14,20,.9) 60%); }
+.param { display: block; margin: 0 0 16px; }
+.param.inline .phead { margin: 0; }
+.phead { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px; color: var(--mute); }
+.phead output { font: 13px var(--mono); color: var(--ink); }
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 44px; background: none; margin: -10px 0; --f: .5; }
+input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--acc) calc(var(--f) * 100%), rgba(255,255,255,.1) 0); }
+input[type=range]::-moz-range-track { height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--acc) calc(var(--f) * 100%), rgba(255,255,255,.1) 0); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; margin-top: -8px; border-radius: 50%; background: #fff; border: 4px solid var(--acc); box-shadow: 0 0 0 6px color-mix(in srgb, var(--acc) 15%, transparent); }
+input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 4px solid var(--acc); }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button { flex: 1 1 0; min-height: 44px; border-radius: 12px; border: 1px solid var(--hair); background: rgba(255,255,255,.03); color: var(--mute); font-size: 13px; padding: 4px 8px;
+  transition: background .4s var(--ease), color .4s var(--ease), border-color .4s var(--ease); }
+.seg button.on { background: color-mix(in srgb, var(--acc) 16%, transparent); border-color: color-mix(in srgb, var(--acc) 45%, transparent); color: var(--ink); }
+.toggle { width: 52px; height: 44px; border: 0; background: none; position: relative; flex: none; }
+.toggle::before { content: ""; position: absolute; inset: 12px 0; border-radius: 99px; background: rgba(255,255,255,.12); transition: background .4s var(--ease); }
+.toggle::after { content: ""; position: absolute; top: 14px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .5s var(--ease); }
+.toggle.on::before { background: var(--acc); } .toggle.on::after { transform: translateX(30px); background: #0b0b0f; }
+.act { display: flex; width: 100%; justify-content: center; align-items: center; min-height: 46px; margin-top: 8px; border-radius: 99px; border: 1px solid color-mix(in srgb, var(--acc) 40%, transparent);
+  background: color-mix(in srgb, var(--acc) 10%, transparent); color: var(--ink); transition: transform .4s var(--ease), background .4s var(--ease); }
+.act:active { transform: scale(.98); }
+@media (hover: hover) { .act:hover { background: color-mix(in srgb, var(--acc) 20%, transparent); } }
+#outs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.out { background: rgba(255,255,255,.03); border-radius: 12px; padding: 9px 12px; min-width: 0; }
+.out span { display: block; color: var(--faint); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.out b { font: 500 15px var(--mono); color: var(--ink); word-break: break-all; }
+#explain { color: rgba(233,237,245,.82); }
+#explain p { margin: 0 0 10px; } #explain p:last-child { margin: 0; }
+#explain b, #watch b { color: var(--acc); font-weight: 500; }
+#watch { margin: 0; padding-left: 18px; color: rgba(233,237,245,.82); }
+#watch li { margin-bottom: 6px; } #watch li::marker { color: var(--acc); }
+.ghost { min-height: 44px; padding: 0 16px; border-radius: 99px; border: 1px solid var(--hair); background: rgba(255,255,255,.03); color: var(--mute); font-size: 13px; }
+
+/* ---------- 說明視窗 ---------- */
+dialog { border: 0; padding: 0; background: none; color: var(--ink); max-width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); }
+dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(6px); }
+dialog .core { padding: 24px; max-height: calc(100dvh - 52px); overflow-y: auto; }
+dialog h2 { margin: 12px 0 10px; font-size: 22px; }
+dialog p, dialog li { color: rgba(233,237,245,.8); }
+dialog form { margin-top: 18px; text-align: right; }
+
+#mbar, #scrim { display: none; }
+
+/* ---------- 平板＋手機共用：主題清單收進抽屜、頂部有標題列 ---------- */
+@media (max-width: 1279px) {
+  body { grid-template-columns: 1fr 360px; grid-template-rows: auto 1fr; }
+  #mbar { display: flex; grid-column: 1 / -1; z-index: 5; align-items: center; gap: 10px; padding: 8px 12px; padding-top: max(8px, env(safe-area-inset-top));
+    background: rgba(5,5,7,.82); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--hair); }
+  #mTitle { flex: 1; font-weight: 600; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #side { position: fixed; z-index: 7; inset: 0 auto 0 0; width: min(340px, 86vw); background: #08090d; border-right: 1px solid var(--hair);
+    transform: translateX(-102%); transition: transform .6s var(--ease); padding-top: max(18px, env(safe-area-inset-top)); }
+  body.nav-open #side { transform: none; }
+  #scrim { display: block; position: fixed; inset: 0; z-index: 6; background: rgba(0,0,0,.55); opacity: 0; pointer-events: none; transition: opacity .5s var(--ease); }
+  body.nav-open #scrim { opacity: 1; pointer-events: auto; }
+  #stage { margin: 12px 0 12px 12px; }
+  #panel .top .ghost { display: none; }
+}
+@media (pointer: coarse) { #hint .mouse { display: none; } }
+@media (pointer: fine) { #hint .touch { display: none; } }
+
+/* ---------- 手機版面規則（2026-10-15）：44px 可點、輸入 16px、字最小 12px；iPad mini 直向也走這裡 ---------- */
+@media (max-width: 900px) {
+  body { display: block; height: auto; overflow: auto; }
+  #mbar { position: sticky; top: 0; }
+  #stage { position: sticky; top: 61px; z-index: 2; height: 46dvh; margin: 0 10px; border-radius: 20px; background-color: #08090d; box-shadow: 0 -12px 0 10px var(--bg); } /* 不透明＋外圈遮罩：底下捲動的文字不能透出來 */
+  #dock { bottom: 10px; gap: 4px; }
+  #hint { top: 10px; left: 12px; }
+  #chart { left: 8px; top: 34px; bottom: auto; width: min(220px, 52%); padding: 6px 6px 2px; }
+  #chart canvas { height: 76px; }
+  #panel { padding: 18px 16px calc(40px + env(safe-area-inset-bottom)); overflow: visible; }
+  #title { font-size: 26px; }
+}
+/* iPad mini 直向（744px）：3D 畫面高一點、數值排三欄 */
+@media (min-width: 600px) and (max-width: 900px) {
+  #stage { height: 54dvh; }
+  #chart { width: 280px; } #chart canvas { height: 120px; }
+  #outs { grid-template-columns: repeat(3, 1fr); }
+  #panel { padding: 22px 24px 48px; }
+}
+</style>
+</head>
+<body data-realm="classic">
+<header id="mbar">
+  <button class="ib" id="menu" aria-label="主題清單"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
+  <span id="mTitle"></span>
+  <button class="ib" id="mHelp" aria-label="說明"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6M12 17h.01"/></svg></button>
+</header>
+<div id="scrim"></div>
+
+<nav id="side">
+  <div class="brand">
+    <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="3.4" fill="#f5b544"/><g fill="none" stroke-width="1.3"><ellipse cx="16" cy="16" rx="13" ry="5" stroke="#4fd1e8"/><ellipse cx="16" cy="16" rx="13" ry="5" stroke="#a78bfa" transform="rotate(60 16 16)"/><ellipse cx="16" cy="16" rx="13" ry="5" stroke="#f5b544" transform="rotate(120 16 16)"/></g></svg>
+    <div><b>物理 3D 實驗室</b><small><span id="count"></span> 個現象與方程式</small></div>
+  </div>
+  <div class="shell"><div class="core" id="realms">
+    <button data-r="classic">經典物理<small></small></button>
+    <button data-r="theory">理論物理<small></small></button>
+    <button data-r="quantum">量子力學<small></small></button>
+  </div></div>
+  <div class="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="rgba(233,237,245,.4)" stroke-width="1.6"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>
+    <input id="q" type="search" placeholder="搜尋：白努利、熵、doppler…" autocomplete="off">
+  </div>
+  <div id="list"></div>
+</nav>
+
+<main id="stage">
+  <div id="hint"><span class="mouse">拖曳旋轉 · 滾輪縮放 · 右鍵平移</span><span class="touch">單指旋轉 · 雙指縮放／平移</span></div>
+  <div id="chart" hidden><b></b><canvas></canvas></div>
+  <div id="dock">
+    <button class="ib" id="reset" aria-label="重新開始"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4.5h4.5"/></svg></button>
+    <button class="ib" id="play" aria-label="暫停"></button>
+    <div id="speed"><button data-s=".25">¼×</button><button data-s=".5">½×</button><button data-s="1" class="on">1×</button><button data-s="2">2×</button></div>
+    <button class="ib" id="view" aria-label="重設視角"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg></button>
+  </div>
+</main>
+
+<aside id="panel">
+  <div class="top"><span class="eyebrow" id="eyebrow"></span><button class="ghost" id="helpBtn">說明</button></div>
+  <div><h1 id="title"></h1><p id="en"></p></div>
+  <div class="shell card formulaCard"><div class="core"><h4>方程式</h4><div id="formula"></div></div></div>
+  <div class="shell card" id="paramBox"><div class="core"><h4>調整參數</h4><div id="params"></div></div></div>
+  <div class="shell card" id="outBox" hidden><div class="core"><h4>即時數值</h4><div id="outs"></div></div></div>
+  <div class="shell card"><div class="core"><h4>原理</h4><div id="explain"></div></div></div>
+  <div class="shell card" id="watchBox"><div class="core"><h4>觀察重點</h4><ul id="watch"></ul></div></div>
+</aside>
+
+<dialog id="help"><div class="shell"><div class="core">
+  <span class="eyebrow">About</span>
+  <h2>物理 3D 實驗室</h2>
+  <p>用可以轉動的 3D 場景看物理現象背後的方程式。分成三區：<b>經典物理</b>（力學、流體、熱、波、光、電磁）、<b>理論物理</b>（相對論、宇宙學、分析力學與統計）、<b>量子力學</b>。</p>
+  <ul>
+    <li>左邊選主題，或直接搜尋中文／英文名稱。</li>
+    <li>3D 畫面：拖曳旋轉、滾輪或雙指縮放、右鍵或雙指拖曳平移。</li>
+    <li>底下的控制列可以暫停（空白鍵）、重來、改播放速度、回到預設視角。</li>
+    <li>右邊的滑桿會即時改變模擬，「即時數值」是照方程式算出來的。</li>
+    <li>每個主題都有自己的網址（例如 <code>#snell</code>），可以直接分享。</li>
+  </ul>
+  <p>模擬為了好看會縮放尺度（例如光速、星系距離），數字的相對關係照公式算，絕對大小不一定是真實單位。</p>
+  <p style="color:var(--faint)">CuoYo 設計、Opus 5.5 製作</p>
+  <form method="dialog"><button class="ghost">關閉</button></form>
+</div></div></dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
