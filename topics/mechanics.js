@@ -551,9 +551,9 @@ export default [
     id: 'angular', realm: 'classic', cat: '力學', title: '角動量守恆', en: 'Conservation of Angular Momentum', keys: '轉動慣量 花式滑冰 旋轉 torque',
     tex: ['L = I\\omega = \\text{常數}', 'I = I_0 + 2mr^2'],
     explain: '<p>沒有外力矩時，<b>角動量 \\(L = I\\omega\\) 不變</b>。把手上的啞鈴收到身體旁邊，轉動慣量 \\(I\\) 變小，轉速 \\(\\omega\\) 就自動變快。花式滑冰選手收手臂高速旋轉、跳水選手抱膝翻轉，都是這個原理。</p><p>有趣的是轉動動能 \\(\\tfrac12 I\\omega^2\\) 會<b>增加</b>，多出來的能量來自手臂往內拉時做的功。</p>',
-    watch: ['橘色箭頭（角動量）長度從頭到尾不變。', '拖動「手臂伸出距離」或按按鈕：收手轉速暴增，左下的點沿著反比曲線 ω = L/I 移動。', '注意「轉動動能」收手時變大。'],
+    watch: ['橘色箭頭（角動量）長度從頭到尾不變。', '拖動「啞鈴到轉軸的距離」或按按鈕：收手轉速暴增，左下的點沿著反比曲線 ω = L/I 移動。', '注意「轉動動能」收手時變大。'],
     params: [
-      { k: 'r', label: '手臂伸出距離 r', min: 0.3, max: 1.5, step: 0.01, v: 1.5, unit: 'm' },
+      { k: 'r', label: '啞鈴到轉軸的距離 r', min: 0.3, max: 1.5, step: 0.01, v: 1.5, unit: 'm' },
       { k: 'w0', label: '張開手時的轉速', min: 0.4, max: 2, step: 0.05, v: 1, unit: 'rad/s' },
     ],
     cam: [4.5, 4, 6], target: [0, 1.4, 0],
@@ -588,10 +588,10 @@ export default [
           fig.rotation.y += w * dt;
           hf.mood(w > 4 ? 'dizzy' : 'happy'); dz.visible = spin.visible = w > 4; dz.tick(dt);
           for (const a of arms) {
-            const sh = U.V(a.s * 0.3, 1.5, 0), hand = U.V(a.s * (0.3 + r), 1.45, 0);
+            const sh = U.V(a.s * 0.3, 1.5, 0), hand = U.V(a.s * Math.max(0.34, r), 1.45, 0);   // 啞鈴中心到轉軸 = r（和 I 的計算一致）
             a.arm.set(sh, hand); a.db.position.copy(hand);
           }
-          const hx = (0.3 + r), ry = fig.rotation.y;
+          const hx = Math.max(0.34, r), ry = fig.rotation.y;
           trail.pos.set([hx * Math.cos(ry), 1.45, -hx * Math.sin(ry)], (n % 300) * 3); n++;
           trail.flush(Math.min(n, 300));
           LA.set(U.V(0, 2.3, 0), U.V(0, 1.4, 0));
@@ -607,7 +607,7 @@ export default [
     id: 'gravity', realm: 'classic', cat: '力學', title: '萬有引力定律', en: "Newton's Law of Universal Gravitation", keys: '引力 重力 軌道 逃逸速度 orbit',
     tex: ['F = G\\dfrac{m_1 m_2}{r^2}', 'v_{\\text{圓}} = \\sqrt{\\dfrac{GM}{r}},\\quad v_{\\text{逃逸}} = \\sqrt{\\dfrac{2GM}{r}}'],
     explain: '<p>任何兩個有質量的物體都互相吸引，力和質量乘積成正比、和<b>距離平方成反比</b>。蘋果掉下來和月亮繞地球，是同一個力。</p><p>行星其實一直在「往下掉」，只是橫向速度夠快，一直掉不到恆星上，就成了軌道。速度剛好 \\(\\sqrt{GM/r}\\) 是正圓，比它快變橢圓，超過 \\(\\sqrt2\\) 倍就逃逸、再也不回來。</p>',
-    watch: ['地面上的小箭頭是重力場，越靠近恆星越強（距離平方反比）。', '速度倍率 1.0 是正圓；0.7 是橢圓；超過 1.41 行星飛走（總能量變正）。', '恆星也被行星拉著小小晃動，兩個紅色力箭頭永遠一樣長。', '旁邊的普奇神父（JoJo 第六部）按「Made in Heaven」會讓時間加速：行星跑得飛快，但軌道形狀完全一樣——時間變快不會改變物理定律。'],
+    watch: ['地面上的小箭頭是重力場，越靠近恆星越強（真實是距離平方反比；箭頭長度取平方根壓縮過，不然近的太長、遠的看不見）。', '速度倍率 1.0 是正圓；0.7 是橢圓；超過 1.41 行星飛走（總能量變正）。', '恆星也被行星拉著小小晃動，兩個紅色力箭頭永遠一樣長。', '旁邊的普奇神父（JoJo 第六部）按「Made in Heaven」會讓時間加速：行星跑得飛快，但軌道形狀完全一樣——時間變快不會改變物理定律。'],
     params: [
       { k: 'M', label: '恆星質量 M', min: 5, max: 40, step: 1, v: 20 },
       { k: 'r0', label: '起始距離 r', min: 2, max: 7, step: 0.1, v: 5 },
