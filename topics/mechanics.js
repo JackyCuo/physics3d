@@ -1,4 +1,5 @@
 import { AMBER, CYAN, RED, WHITE } from './palette.js';
+import * as jojo from './jojo.js';
 // 經典物理・力學
 export const F = {
   accel: (force, m) => force / m,
@@ -611,20 +612,7 @@ export default [
       const planet = U.sphere(0.22, U.mat(0x4fd1e8, { rough: 0.5 })), pf = U.face(0.22), sf = U.face(1); planet.add(pf); star.add(sf);
       const hot = U.pop('好燙好燙！', 0.42);
       // 普奇神父（《JoJo 的奇妙冒險》第六部惡搞）：站在旁邊講引力；「Made in Heaven」只把時間加速，物理定律不變
-      const pucci = new THREE.Group(); pucci.position.set(-6.8, -0.4, 4.5); pucci.rotation.y = 0.6;   // 大致轉向預設鏡頭
-      const robe = U.cyl(0.45, 1, 2.8, U.mat(0x15151c, { rough: 0.7 })); robe.position.y = 1.4;
-      const collar = U.mesh(new THREE.TorusGeometry(0.42, 0.08, 8, 24), U.mat(0xf2f4f8)); collar.rotation.x = Math.PI / 2; collar.position.y = 2.82;
-      const crossV = U.box(0.12, 0.7, 0.05, U.glow(0xf2f4f8)), crossH = U.box(0.45, 0.12, 0.05, U.glow(0xf2f4f8));
-      crossV.position.set(0, 1.9, 0.66); crossH.position.set(0, 2.05, 0.66);
-      const pHead = U.sphere(0.5, U.mat(0x9a6a4a, { rough: 0.6 })); pHead.position.y = 3.35;
-      const pFace = U.face(0.5); pFace.position.y = 3.35;
-      const pHair = U.mesh(new THREE.SphereGeometry(0.53, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.35), U.mat(0xe8e8e8, { rough: 0.8 })); pHair.position.y = 3.35;
-      pucci.add(robe, collar, crossV, crossH, pHead, pFace, pHair);
-      const bead = U.mat(0x3a3a44);   // 頭頂的辮子：三排小珠
-      for (const lat of [-0.22, 0, 0.22]) for (let k = 0; k < 5; k++) {
-        const a = -0.9 + k * 0.45, rr = Math.sqrt(0.53 ** 2 - lat * lat), b = U.sphere(0.06, bead);
-        b.position.set(lat, 3.35 + rr * Math.cos(a), rr * Math.sin(a)); pucci.add(b);
-      }
+      const pucci = jojo.pucci(U, THREE), pFace = pucci.face; pucci.position.set(-6.8, -0.4, 4.5); pucci.rotation.y = 0.6;   // 大致轉向預設鏡頭
       const pName = U.label('普奇神父', { size: 0.5, color: 'rgba(233,237,245,.8)' }); pName.position.set(-6.8, 4.1, 4.5);
       const pSay = U.pop('', 0.7); pSay.position.set(-5.5, 5.1, 4.5);
       const QUOTES = ['你相信「引力」嗎？', '人與人之間，也存在著「引力」。', '數質數冷靜下來…2、3、5、7、11、13…', '質數是孤獨的數字，能給我勇氣。', '我要到達「天堂」。'];
@@ -773,13 +761,7 @@ export default [
       // 時間停止時整個世界變色（從裡面看的大球）
       const tint = U.mesh(new THREE.SphereGeometry(40, 24, 16), new THREE.MeshBasicMaterial({ color: 0x5a2d8c, transparent: true, opacity: 0.45, side: THREE.BackSide, depthWrite: false }));
       const gold = U.mat(0xf2c230, { rough: 0.5 });
-      const dio = new THREE.Group(); dio.position.set(-5, 0, 0);
-      const dBody = U.cyl(0.32, 0.42, 1.55, gold); dBody.position.y = 0.78;
-      const dHead = U.sphere(0.36, U.mat(0xf1d2b3, { rough: 0.6 })); dHead.position.y = 1.92;
-      const dFace = U.face(0.36); dFace.position.y = 1.92;
-      const hair = U.mesh(new THREE.SphereGeometry(0.39, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.38), U.mat(0xffe066, { rough: 0.4 })); hair.position.y = 1.92;
-      const band = U.box(0.18, 0.12, 0.05, U.mat(0x3fbf5f)); band.position.set(0, 2.2, 0.25);   // 綠色愛心頭帶（簡化成一塊）
-      dio.add(dBody, dHead, dFace, hair, band);
+      const dio = jojo.dio(U, THREE); dio.position.set(-5, 0, 0);
       const dArm = U.beam(0, 0.07, gold);
       const dName = U.label('DIO', { size: 0.4, color: '#ffe066' }); dName.position.set(-5, 2.65, 0);
       // 替身 THE WORLD：時間停止時浮在 DIO 背後
@@ -799,12 +781,7 @@ export default [
       const quote = U.pop('', 0.42), count = U.label('', { size: 0.6, color: '#ffe066' }), ouch = U.pop('嗚啊啊！', 0.42), menacing = U.label('ゴ ゴ ゴ ゴ', { size: 0.7, color: '#c58bff' });
       quote.position.set(-5, 3.3, 0); count.position.set(0, 4.6, 0); ouch.position.set(TGT.x + 0.45, 3, 0); menacing.position.set(2.5, 3.6, 0);
       // 壓路機（ロードローラー）：停止的最後一秒出現在木頭人正上方，靜止；時間恢復後自由落體
-      const RH = 6.5, roller = new THREE.Group(), ryel = U.mat(0xf2c230, { rough: 0.5 });
-      const drum = U.cyl(0.65, 0.65, 1.8, U.mat(0x8a8f99, { metal: 0.8, rough: 0.3 })); drum.rotation.x = Math.PI / 2; drum.position.set(0.9, 0.65, 0);
-      const rbody = U.box(1.8, 0.9, 1.5, ryel); rbody.position.set(-0.4, 0.75, 0);
-      const cabin = U.box(0.8, 0.8, 1.1, ryel); cabin.position.set(-0.6, 1.6, 0);
-      const rtext = U.label('ROAD ROLLER', { size: 0.22, color: '#111' }); rtext.position.set(-0.4, 0.75, 0.8);
-      roller.add(drum, rbody, cabin, rtext);
+      const RH = 6.5, roller = jojo.roller(U, THREE);
       const dogo = U.pop('ドゴォ！', 0.6); dogo.position.set(TGT.x + 0.45, 1.6, 0.8);
       root.add(roller, dogo);
       root.add(ground, tint, dio, dArm, dName, world, dummy, apple, aV, quote, count, ouch, menacing, ...knives);

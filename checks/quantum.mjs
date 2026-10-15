@@ -24,4 +24,7 @@ assert.ok(F.sigmaX(1, 3) * F.sigmaP(1) > 0.5, '自由演化後乘積變大');
 near(F.chsh(0, Math.PI / 2, Math.PI / 4, 3 * Math.PI / 4), 2 * Math.SQRT2, 1e-12, 'CHSH = 2√2');
 near(F.slitI(0, 1.4, 0.22, 0.3, false), 1, 1e-12, '雙狹縫中央亮紋');
 near(F.slitI(0.3 / 2.8, 1.4, 0.22, 0.3, false), 0, 1e-9, '雙狹縫第一暗紋');
+for (const q of [0, 0.3, 1]) near(F.ctcNext(F.ctcFixed(q), q), F.ctcFixed(q), 1e-12, `時光旅行自洽解 q=${q}`);
+near(F.ctcFixed(1), 0.5, 1e-12, '祖父悖論：一定成功時馬蒂一半存在');
+assert.ok(F.ctcNext(1, 1) === 0 && F.ctcNext(0, 1) === 1, '古典 0/1 沒有自洽解（1→0→1）');
 console.log('量子力學檢查通過');

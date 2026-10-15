@@ -1,3 +1,4 @@
+import * as jojo from './jojo.js';
 // 量子力學（波函數類主題用 ħ = m = 1 的自然單位）
 const H = 6.62607015e-34, C = 2.99792458e8, KB = 1.380649e-23, HEV = 4.135667696e-15, HC_EVNM = 1239.84198;
 const D = Math.PI / 180;
@@ -55,6 +56,10 @@ export const F = {
   hydrogenE: n => -13.6057 / (n * n),
   // 自旋單態的關聯 E(a,b) = −cos(a−b)
   corr: (a, b) => -Math.cos(a - b),
+  // 祖父悖論（回到未來版）：回到過去阻止爸媽相遇、成功機率 q。馬蒂存在的機率 p → 下一輪 1 − q·p
+  ctcNext: (p, q) => 1 - q * p,
+  // Deutsch（1991）自洽條件 p = 1 − q·p 的解：一定存在
+  ctcFixed: q => 1 / (1 + q),
   chsh: (a, a2, b, b2) => Math.abs(F.corr(a, b) - F.corr(a, b2) + F.corr(a2, b) + F.corr(a2, b2)),
 };
 
@@ -285,14 +290,7 @@ export default [
       const dets = [0, 1].map(() => U.mesh(new THREE.TorusGeometry(0.35, 0.05, 8, 24), U.glow(0xf5b544)));
       dets.forEach(d => { d.rotation.y = Math.PI / 2; });
       // 觀測者（JoJo 的空條承太郎）：打開「觀測」才出現
-      const jo = new THREE.Group(), coat = U.mat(0x1a1d2a, { rough: 0.7 });
-      const jb = U.cyl(0.38, 0.5, 1.9, coat); jb.position.y = 0.95;
-      const jh = U.sphere(0.36, U.mat(0xf1d2b3, { rough: 0.6 })); jh.position.y = 2.2;
-      const jf = U.face(0.36); jf.position.y = 2.2;
-      const cap = U.cyl(0.38, 0.38, 0.3, coat); cap.position.y = 2.48;
-      const brim = U.cyl(0.5, 0.5, 0.04, coat); brim.position.set(0, 2.36, 0.12);
-      const chain = U.box(0.04, 0.8, 0.04, U.mat(0xf2c230, { metal: 0.8 })); chain.position.set(0.3, 1.4, 0.36);
-      jo.add(jb, jh, jf, cap, brim, chain); jo.position.set(-2.2, -2.5, 2.8);
+      const jo = jojo.jotaro(U, THREE), jf = jo.face; jo.position.set(-2.2, -2.5, 2.8);
       const joName = U.label('空條承太郎（觀測者）', { size: 0.45, color: '#c58bff' }), joSay = U.pop('', 0.55), menacing = U.label('ゴ ゴ ゴ ゴ', { size: 0.6, color: '#c58bff' });
       joName.position.set(-2.2, 0.55, 2.8); joSay.position.set(-2.2, 1.25, 2.8); menacing.position.set(2, 3.2, -3);
       const eSay = U.pop('', 0.5); eSay.position.set(-9, 1.4, 0);
@@ -802,6 +800,98 @@ export default [
             { pts: xs.map(x => [x, F.corr(0, x * D)]), color: '#4fd1e8' },
           ], n ? [{ x: dd, y: Em, color: '#f5b544', r: 5, text: `量到 ${Em.toFixed(2)}` }] : []);
           out({ '量測對數': n, '量到的關聯 E': n ? Em.toFixed(3) : '—', '量子預測 −cos(a−b)': F.corr(P.a * D, P.b * D).toFixed(3), '隱變數上限 CHSH': '2', '量子 CHSH（0°,90°,45°,135°）': F.chsh(0, 90 * D, 45 * D, 135 * D).toFixed(3) });
+        },
+      };
+    },
+  },
+  {
+    id: 'timetravel', realm: 'quantum', cat: '量子態', title: '時光旅行與祖父悖論（回到未來版）', en: 'Time Travel · Grandfather Paradox (Back to the Future parody)', keys: '回到未來 back to the future 時光機 迪羅倫 delorean 祖父悖論 grandfather paradox 封閉類時曲線 ctc deutsch 自洽 novikov 多世界',
+    tex: ['p_{\\text{下一輪}} = 1 - q\\,p', '\\text{Deutsch 自洽條件：}\\ \\rho = \\operatorname{Tr}_{\\text{外}}\\!\\left[U(\\rho_{\\text{外}}\\otimes\\rho)U^\\dagger\\right] \;\\Rightarrow\; p^* = \\dfrac{1}{1+q}'],
+    explain: '<p><b>往未來</b>的時光旅行是真的：跑得快（時間膨脹）或待在重力強的地方，你的時間就走得比別人慢，回來時別人老得比你多。GPS 衛星每天都要修正這個。</p><p><b>回到過去</b>就難了。廣義相對論的某些解（旋轉宇宙、可穿越的蟲洞）允許「封閉類時曲線」：一路往前走，卻回到自己的過去。但這需要負能量之類沒人做得出來的東西，到現在也沒人知道真的行不行。</p><p>就算能回去，也有<b>祖父悖論</b>：回到過去阻止祖父母相遇，自己就不會出生；不出生就沒人回去阻止，那他們又會相遇……在《回到未來》裡是馬蒂害爸媽沒相遇，照片上的自己開始消失。</p><p>三種解法：<b>古典</b>規定歷史只能是 0 或 1，這時找不到自洽的答案，照片會一直閃（悖論）。<b>諾維科夫自洽原則</b>則說，只會發生前後一致的歷史，所以你注定會失敗。<b>Deutsch 的量子解</b>（1991）允許時光機裡的狀態是機率混合，可以證明自洽解<b>一定存在</b>：阻止一定成功時，馬蒂剛好「一半存在」，照片上的他是半透明的。另一種說法是多世界：你回去改的是另一條時間線，就像布朗博士在黑板上畫的「另一個 1985」。</p><p>88 英里時速和 1.21 吉瓦是電影設定，不是物理。</p>',
+    watch: ['左下圖的斜線是「這一輪馬蒂存在的機率 → 下一輪的機率」，跟對角線的交點就是自洽解。', '關掉「Deutsch 量子解」並把阻止成功機率拉到 1：照片上的馬蒂 1、0、1、0 一直閃，永遠沒有自洽的歷史，這就是祖父悖論。', '打開量子解：馬蒂穩定在交點的機率（q = 1 時剛好 50%，半透明）。', '成功機率 0（什麼都沒做）：p = 1，跟古典一樣沒問題。'],
+    params: [
+      { k: 'q', label: '阻止爸媽相遇的成功機率 q', min: 0, max: 1, step: 0.05, v: 1 },
+      { k: 'deutsch', label: 'Deutsch 量子解', bool: true, v: false },
+    ],
+    grid: false, cam: [0, 5, 17], target: [0, 1.8, 0],
+    setup({ THREE, root, U, P, out, chart }) {
+      const road = U.box(16, 0.06, 2.4, U.mat(0x2a2d36, { rough: 0.9 })); road.position.set(-3, -0.03, 0);
+      // 迪羅倫時光機
+      const car = new THREE.Group(), steel = U.mat(0xdfe3ea, { metal: 0.5, rough: 0.35 });
+      const cb = U.box(2.2, 0.45, 1.05, steel); cb.position.y = 0.42;
+      const cc = U.box(1, 0.35, 0.95, U.mat(0x223044, { metal: 0.6, rough: 0.2 })); cc.position.set(-0.1, 0.8, 0);
+      const flux = U.box(0.2, 0.25, 0.05, U.glow(0xfff2a0)); flux.position.set(-0.1, 0.8, 0.5);   // 通量電容器
+      car.add(cb, cc, flux);
+      for (const [wx, wz] of [[-0.7, 0.55], [0.7, 0.55], [-0.7, -0.55], [0.7, -0.55]]) { const w = U.cyl(0.22, 0.22, 0.12, U.mat(0x111111)); w.rotation.x = Math.PI / 2; w.position.set(wx, 0.22, wz); car.add(w); }
+      const fire = [-0.45, 0.45].map(z => U.line(2, 0xff7a30, 1));
+      const flash = U.sphere(1, U.glow(0xbfe6ff, 0.8));
+      const speedo = U.label('', { size: 0.5, color: '#ff7a30' }), year = U.label('', { size: 0.6, color: '#7fe08a' });
+      year.position.set(-3, 4.6, 0);
+      // 布朗博士
+      const doc = new THREE.Group(), coat = U.mat(0xf2f4f8, { rough: 0.7 });
+      const db = U.cyl(0.35, 0.45, 1.6, coat); db.position.y = 0.8;
+      const dh = U.sphere(0.34, U.mat(0xf1d2b3, { rough: 0.6 })); dh.position.y = 1.95;
+      const df = U.face(0.34); df.position.y = 1.95;
+      doc.add(db, dh, df);
+      for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2, h = U.sphere(0.13, U.mat(0xffffff, { rough: 0.9 })); h.position.set(0.32 * Math.cos(a), 2.15 + 0.08 * Math.sin(3 * a), 0.32 * Math.sin(a) - 0.05); doc.add(h); }   // 亂翹的白髮
+      doc.position.set(-6.5, 0, 2.5);
+      const docSay = U.pop('', 0.5); docSay.position.set(-4.5, 3.4, 2.5);
+      // 全家福照片：哥哥、姊姊、馬蒂，馬蒂的透明度 = 他存在的機率
+      const photo = new THREE.Group();
+      const frame = U.box(3.4, 2.4, 0.1, U.mat(0x5a3a1a, { rough: 0.8 })), paper = U.box(3.1, 2.1, 0.02, U.mat(0xe8dcc0, { rough: 0.9 }));
+      paper.position.z = 0.06; photo.add(frame, paper);
+      const kid = (x, col) => {
+        const k = new THREE.Group(), b = U.cyl(0.22, 0.3, 0.8, U.mat(col, { rough: 0.7 })), h = U.sphere(0.24, U.mat(0xf1d2b3, { rough: 0.6 })), f = U.face(0.24);
+        b.position.y = -0.45; h.position.y = 0.2; f.position.y = 0.2;
+        k.add(b, h, f); k.position.set(x, 0, 0.2); k.f = f; photo.add(k); return k;
+      };
+      kid(-0.9, 0x4a6fa5); kid(0, 0xc04a7a); const marty = kid(0.9, 0xd9534f);
+      photo.position.set(5.5, 2.4, 0);
+      const pLab = U.label('', { size: 0.4, color: '#e9edf5' }); pLab.position.set(5.5, 4.0, 0);
+      const mSay = U.pop('', 0.45); mSay.position.set(5.5, 0.6, 0.4);
+      root.add(road, car, ...fire, flash, speedo, year, doc, docSay, photo, pLab, mSay);
+      const ch = chart({ title: '自洽解：p → 1 − qp 與對角線的交點', x: [0, 1], y: [0, 1], xl: '這一輪馬蒂存在機率 p', yl: '下一輪' });
+      const T = 5;
+      let s0, e, p, n, hist;   // e：古典模式下馬蒂存不存在（0/1）；p：顯示用的機率
+      const reset = () => { s0 = 0; e = 1; p = 1; n = 0; hist = [1]; };
+      reset();
+      return {
+        actions: { '重來': reset },
+        onParam: reset,
+        update(dt, P, t) {
+          const q = P.q, ps = F.ctcFixed(q);
+          const prev = s0; s0 = (s0 + dt) % T;
+          if (s0 < prev) {   // 時光機到 88 英里：回到 1955 一次（迴圈一輪）
+            n++;
+            if (P.deutsch) e = ps; else e = e === 1 ? (Math.random() < q ? 0 : 1) : 1;   // 古典：存在 → 去阻止（機率 q 成功）→ 不存在；不存在 → 爸媽照常相遇
+            hist.push(e); if (hist.length > 12) hist.shift();
+          }
+          p += (e - p) * Math.min(1, dt * 4);
+          // 車：0～3 秒加速到 88 mph，接著閃光消失、留下兩道火痕
+          const drive = s0 < 3, u = Math.min(1, s0 / 3), x = -7 + 10 * u * u;
+          car.visible = drive; car.position.x = x;
+          speedo.visible = drive; speedo.position.set(x, 1.6, 0); speedo.set(`${Math.round(88 * u)} mph`);
+          const k = s0 - 3;
+          flash.visible = k >= 0 && k < 0.4; flash.scale.setScalar(0.5 + k * 6); flash.material.opacity = 0.8 * (1 - k / 0.4);
+          fire.forEach((f, i) => { f.visible = k >= 0; f.set([U.V(-1, 0.02, i ? 0.45 : -0.45), U.V(3, 0.02, i ? 0.45 : -0.45)]); f.material.opacity = Math.max(0, 1 - k / 2); });
+          year.set(drive ? '1985' : '→ 1955');
+          // 照片
+          fade(marty, Math.max(0.04, p));
+          marty.f.look().mood(p < 0.8 ? 'shock' : 'happy');
+          df.look().mood(!P.deutsch && q > 0.5 ? 'shock' : 'happy');
+          const paradox = !P.deutsch && q > 0;
+          docSay.set(drive && u > 0.85 ? '時速 88 英里！1.21 吉瓦！' : paradox ? cycle(['Great Scott！（偉大的史考特！）', '這會造成時空連續體的崩潰！', '馬蒂，你在改變歷史！'], t, 2.5) : P.deutsch ? 'Deutsch：混合態的自洽解一定存在！' : '什麼都沒改，歷史很安全。');
+          mSay.set(p < 0.15 ? '我…整個消失了！' : p < 0.85 ? '我的手…在變透明！' : '這太沉重了吧，博士！');
+          pLab.set(`馬蒂存在的機率 ${(p * 100).toFixed(0)}%`);
+          // 左下圖：映射線、對角線、古典的跳動、自洽點
+          const marks = [{ x: ps, y: ps, color: '#7fe08a', r: 6, text: `自洽解 ${(ps * 100).toFixed(0)}%` }];
+          if (!P.deutsch) marks.push({ x: e, y: F.ctcNext(e, q), color: '#ff6b6b', r: 5, text: '古典（只能 0 或 1）' });
+          ch.draw([
+            { pts: [[0, 0], [1, 1]], color: 'rgba(255,255,255,.35)', dash: [4, 4], w: 1.2 },
+            { pts: [[0, 1], [1, 1 - q]], color: '#4fd1e8' },
+          ], marks);
+          const flips = hist.slice(1).filter((v, i) => v !== hist[i]).length;
+          out({ '馬蒂存在機率 p': (p * 100).toFixed(1) + '%', '自洽解 1/(1+q)': (ps * 100).toFixed(1) + '%', '迴圈次數': n, '歷史': P.deutsch ? '自洽（混合態）' : q === 0 ? '自洽（什麼都沒改）' : flips ? `悖論！最近翻轉 ${flips} 次` : '還沒穩定…', '最近幾輪（古典）': P.deutsch ? '—' : hist.map(v => v ? '存在' : '消失').slice(-5).join('→') });
         },
       };
     },

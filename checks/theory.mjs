@@ -6,6 +6,9 @@ const { F: rel } = await import('../topics/relativity.js');
 near(rel.gamma(0.6), 1.25, 1e-12, 'γ(0.6c)');
 near(rel.rs(1.989e30), 2953, 2, '太陽的史瓦西半徑');
 near(rel.energy(0.001), 8.988e13, 1e11, '1 g 的 mc²');
+assert.ok(rel.zeldovichGain(2, 0, 0.8) < 1, '澤爾多維奇：不轉時吸收');
+near(rel.zeldovichGain(2, 0.5, 0.8), 1, 1e-12, '澤爾多維奇：Ω = ω/m 時剛好透明');
+assert.ok(rel.zeldovichGain(2, 0.8, 0.8) > 1 && rel.zeldovichGain(1, 0.8, 0.8) < 1, '澤爾多維奇：mΩ > ω 才放大');
 { // 弱場偏折角 ≈ 2 r_s / b
   const rs = 0.05, b = 5, tr = rel.traceRay(b, rs, 400, 200000);
   near(-tr.dir, 2 * rs / b, 0.002, '重力透鏡偏折角');
@@ -17,6 +20,9 @@ const { F: cos } = await import('../topics/cosmology.js');
 near(cos.hubbleTime(70), 13.97, 0.01, '1/H₀ (70) ≈ 14.0 十億年');
 
 const { F: an } = await import('../topics/analytic.js');
+near(an.fib(12) / an.fib(11), an.PHI, 1e-4, '費氏比值 → φ');
+near(an.goldenAngle(), 137.5078, 1e-3, '黃金角');
+near(an.PHI * an.PHI, an.PHI + 1, 1e-12, 'φ² = φ + 1');
 near(an.action(0, 1), -(9.8 ** 2) * 8 / 24, 0.01, '真實路徑作用量 −g²T³/24');
 for (const n of [1, 2, 3]) for (const e of [-1, 0.3, 2]) assert.ok(an.action(e, n) > an.action(0, n), `S(ε=${e}, n=${n}) 應大於真實路徑`);
 { // 圓碗角動量守恆、壓扁就不守恆

@@ -1,7 +1,11 @@
 import { VIO, AMBER, CYAN } from './palette.js';
+import * as jojo from './jojo.js';
 // 理論物理・分析力學與統計
 const g = 9.8;
 export const F = {
+  PHI: (1 + Math.sqrt(5)) / 2,
+  fib: n => { let a = 0, b = 1; for (let i = 0; i < n; i++) [a, b] = [b, a + b]; return a; },   // F(1) = F(2) = 1
+  goldenAngle: () => 360 * (1 - 2 / (1 + Math.sqrt(5))),   // 360°/φ² ≈ 137.508°
   // 垂直拋球：t=0 與 t=T 都在地面。真實路徑 y = g t (T−t)/2，試探路徑再加 ε sin(nπt/T)
   path: (t, eps, n, T = 2) => g * t * (T - t) / 2 + eps * Math.sin(n * Math.PI * t / T),
   // 作用量 S = ∫ (½ ẏ² − g y) dt（m = 1），梯形法
@@ -42,6 +46,7 @@ export const F = {
 };
 
 
+const cycle = (arr, t, sec = 4) => arr[Math.floor(t / sec) % arr.length];
 export default [
   {
     id: 'leastaction', realm: 'theory', cat: '分析力學與統計', title: '最小作用量原理', en: 'Principle of Least Action', keys: '拉格朗日 lagrangian 作用量 action 變分 hamilton',
@@ -269,6 +274,80 @@ export default [
           ch.o.x = [Math.max(0, tt - 30), Math.max(30, tt)];
           ch.draw([{ pts: hist, color: '#a78bfa' }]);
           out({ '角度差': d < 1e-3 ? d.toExponential(1) + ' rad' : d.toFixed(3) + ' rad', '經過時間': tt.toFixed(1) + ' s', '能量誤差（數值）': (Math.abs(F.dpEnergy(S[0]) - E0) / (3 * 9.8)).toExponential(1) });
+        },
+      };
+    },
+  },
+  {
+    id: 'goldenspiral', realm: 'theory', cat: '數學與自然', title: '黃金螺線（飆馬野郎版）', en: 'Golden Spiral · Fibonacci & Phyllotaxis (Steel Ball Run parody)', keys: '黃金比例 golden ratio φ 費氏數列 fibonacci 對數螺線 葉序 向日葵 黃金角 jojo 飆馬野郎 steel ball run 傑洛 黃金回轉 黃金長方形',
+    tex: ['\\varphi = \\dfrac{1+\\sqrt5}{2} \\approx 1.618,\\qquad \\lim_{n\\to\\infty}\\dfrac{F_{n+1}}{F_n} = \\varphi', 'r(\\theta) = a\\,\\varphi^{2\\theta/\\pi},\\qquad \\text{黃金角} = \\dfrac{360^\\circ}{\\varphi^2} \\approx 137.5^\\circ'],
+    explain: '<p><b>黃金比例</b> \\(\\varphi\\) 是唯一滿足「整體 : 大段 = 大段 : 小段」的比例。從黃金長方形切掉一個正方形，剩下的又是黃金長方形，可以無限切下去；在每個正方形畫四分之一圓，連起來就是<b>黃金螺線</b>。它是一種對數螺線，每轉 90° 放大 \\(\\varphi\\) 倍。</p><p>費氏數列 1, 1, 2, 3, 5, 8…（每項是前兩項相加）相鄰兩項的比會越來越接近 \\(\\varphi\\)，所以左邊用費氏正方形拼出來的螺線很接近真正的黃金螺線。</p><p>右邊的向日葵：每顆新種子比上一顆多轉一個<b>黃金角</b> 137.5°。因為 \\(\\varphi\\) 是「最難用分數逼近的無理數」，種子永遠不會排成直線、也不會留縫，排得最密。角度改一點點就會出現一條條放射狀的縫。</p><p>《JoJo》第七部《飆馬野郎》裡，傑洛說大自然中的「黃金長方形」是鋼球「黃金回轉」的祕密。這是漫畫設定；但黃金比例、費氏數列和葉序都是真的。（鸚鵡螺殼和星系是對數螺線，但大多不是剛好的黃金比例。）</p>',
+    watch: ['把正方形數 n 拉大：左下的 Fₙ₊₁/Fₙ 一下大一下小，夾著 φ 收斂。', '鋼球沿著黃金螺線滾，越往外每轉 90° 半徑就放大 1.618 倍。', '向日葵角度拉到 137.5° 以外（例如 135° 或 140°）：種子排出一條條縫。', '角度換成 90° 或 120° 這種整齊的分數：種子排成幾條直線，浪費空間。'],
+    params: [
+      { k: 'n', label: '費氏正方形數 n', min: 2, max: 12, step: 1, v: 9 },
+      { k: 'ang', label: '向日葵每顆種子轉的角度', min: 90, max: 180, step: 0.1, v: 137.5, unit: '°' },
+      { k: 'N', label: '種子數', min: 50, max: 800, step: 10, v: 500 },
+    ],
+    grid: false, cam: [0, 2.5, 17], target: [0, 2.5, 0],
+    setup({ THREE, root, U, P, out, chart }) {
+      const SP = U.V(-4.2, 3, 0), SF = U.V(4.6, 3, 0), MAXN = 12, MAXS = 800;
+      const sqs = Array.from({ length: MAXN }, () => U.line(5, 0xffffff, 0.35));
+      const spiral = U.line(MAXN * 24, 0xf5b544);
+      const seeds = U.points(MAXS, 0xf5b544, 0.22, true);
+      const disk = U.mesh(new THREE.CircleGeometry(2.8, 64), U.mat(0x3a2a14, { rough: 0.9 })); disk.position.copy(SF).add(U.V(0, 0, -0.05));
+      const petals = new THREE.Group();
+      for (let i = 0; i < 24; i++) { const p = U.mesh(new THREE.CircleGeometry(0.55, 16), U.mat(0xf2c230, { rough: 0.7 })); const a = i / 24 * Math.PI * 2; p.scale.set(0.5, 1.5, 1); p.position.set(3.35 * Math.cos(a), 3.35 * Math.sin(a), -0.08); p.rotation.z = a - Math.PI / 2; petals.add(p); }
+      petals.position.copy(SF);
+      const ball = jojo.steelBall(U, THREE, 0.3);
+      const gy = jojo.gyro(U, THREE); gy.position.set(0.3, -1.6, 2); gy.scale.setScalar(0.9);
+      const say = U.pop('', 0.5); say.position.set(0.3, 1.6, 2);
+      const lab = U.label('', { size: 0.4, color: '#f5b544' }); lab.position.set(SP.x, -0.6, 0);
+      root.add(...sqs, spiral, disk, petals, seeds, ball, gy, say, lab);
+      const ch = chart({ title: 'Fₙ₊₁ / Fₙ → φ', x: [1, 12], y: [0.9, 2.1], xl: 'n', yl: '' });
+      let key = '', path = [], u = 0;
+      const build = () => {
+        // 費氏正方形：右、上、左、下輪流往外貼；每格畫四分之一圓
+        const n = P.n, sizes = Array.from({ length: n }, (_, i) => F.fib(i + 1));
+        let [x0, y0, x1, y1] = [0, 0, 1, 1];
+        const rects = [[0, 0, 1, 1]], arcs = [[[1, 1], [0, 1], [1, 0]]];   // [圓心, 起點, 終點]
+        for (let k = 1; k < n; k++) {
+          const s = sizes[k], d = (k - 1) % 4;
+          if (d === 0) { rects.push([x1, y0, x1 + s, y1]); arcs.push([[x1, y1], [x1, y0], [x1 + s, y1]]); x1 += s; }
+          else if (d === 1) { rects.push([x0, y1, x1, y1 + s]); arcs.push([[x0, y1], [x1, y1], [x0, y1 + s]]); y1 += s; }
+          else if (d === 2) { rects.push([x0 - s, y0, x0, y1]); arcs.push([[x0, y0], [x0, y1], [x0 - s, y0]]); x0 -= s; }
+          else { rects.push([x0, y0 - s, x1, y0]); arcs.push([[x1, y0], [x0, y0], [x1, y0 - s]]); y0 -= s; }
+        }
+        const sc = 6.4 / Math.max(x1 - x0, y1 - y0), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+        const tw = (x, y) => U.V(SP.x + (x - cx) * sc, SP.y + (y - cy) * sc, 0);
+        sqs.forEach((l, i) => { l.visible = i < n; if (i < n) { const [a, b, c, d] = rects[i]; l.set([tw(a, b), tw(c, b), tw(c, d), tw(a, d), tw(a, b)]); } });
+        path = [];
+        for (const [[ox, oy], [ax, ay], [bx, by]] of arcs) {
+          const r = Math.hypot(ax - ox, ay - oy), ta = Math.atan2(ay - oy, ax - ox);
+          let dtt = Math.atan2(by - oy, bx - ox) - ta; dtt = Math.atan2(Math.sin(dtt), Math.cos(dtt));
+          for (let j = 0; j < 24; j++) { const th = ta + dtt * j / 23; path.push(tw(ox + r * Math.cos(th), oy + r * Math.sin(th))); }
+        }
+        spiral.set(path);
+        // 向日葵：第 i 顆種子 r ∝ √i、角度 i × ang
+        const R = 2.6 / Math.sqrt(P.N);
+        for (let i = 0; i < MAXS; i++) {
+          const on = i < P.N, a = i * P.ang * Math.PI / 180, r = R * Math.sqrt(i + 0.5);
+          seeds.pos.set(on ? [SF.x + r * Math.cos(a), SF.y + r * Math.sin(a), 0.02] : [0, 1e4, 0], i * 3);
+          seeds.col.set(i % 2 ? [0.96, 0.71, 0.27] : [0.55, 0.36, 0.12], i * 3);
+        }
+        seeds.flush();
+      };
+      return {
+        update(dt, P, t) {
+          const k = `${P.n},${P.ang},${P.N}`; if (k !== key) { key = k; build(); u = 0; }
+          u = (u + dt * 0.12) % 1;
+          const i = Math.min(path.length - 1, Math.floor(u * path.length));
+          ball.position.copy(path[i]).add(U.V(0, 0, 0.3)); ball.rotation.z -= dt * 8;
+          const off = Math.abs(P.ang - F.goldenAngle()), n = P.n, ratio = F.fib(n + 1) / F.fib(n);
+          gy.face.look().mood(off > 1 ? 'shock' : 'happy');
+          say.set(off > 1 ? '角度錯了！種子排出縫來了——這不是黃金的回轉！' : cycle(['LESSON 5：大自然裡到處藏著「黃金長方形」。', '照黃金比例回轉，鋼球就能得到「無限」的力量！', '向日葵的種子，也照黃金角 137.5° 排。', n >= 11 ? '強尼：這就是…ACT 4，無限的回轉！' : '再多切幾個正方形看看，強尼。'], t));
+          lab.set(`長邊 : 短邊 = ${F.fib(n + 1)} : ${F.fib(n)} = ${ratio.toFixed(5)}`);
+          ch.draw([{ pts: [[1, F.PHI], [12, F.PHI]], color: 'rgba(255,255,255,.4)', dash: [4, 4], w: 1 }, { pts: Array.from({ length: 12 }, (_, j) => [j + 1, F.fib(j + 2) / F.fib(j + 1)]), color: '#f5b544' }], [{ x: n, y: ratio, color: '#4fd1e8', r: 5 }]);
+          out({ 'Fₙ': F.fib(n), 'Fₙ₊₁ / Fₙ': ratio.toFixed(6), '與 φ 的差': (ratio - F.PHI).toExponential(2), '黃金角': F.goldenAngle().toFixed(3) + '°', '向日葵角度偏離': (P.ang - F.goldenAngle()).toFixed(2) + '°' });
         },
       };
     },
