@@ -378,7 +378,7 @@ export default [
       let tt = 0;
       return {
         onParam() { tt = 0; },
-        update(dt, P) {
+        update(dt, P, t) {
           const s = P.s, k0 = P.k0;
           if (P.free) tt += dt * 1.5; else tt = 0;
           if (Math.abs(k0 * tt) > X - 3 || F.sigmaX(s, tt) > 5) tt = 0;
@@ -396,7 +396,10 @@ export default [
           const dx = F.sigmaX(s, tt), dp = F.sigmaP(s);
           car.position.set(k0 * tt * SX, 4.6, 0);
           cop.position.set(-3, 7.4, 0); hei.position.set(-3, 6.5, 0);
-          hei.set(dx < 1 ? '海森堡：不知道，但我很清楚我在哪裡！' : dx > 1.8 ? '海森堡：速度我很清楚，但我在哪…不知道' : '海森堡：大概知道在哪、大概知道多快…');
+          // 兩段對話輪流：被問車速；《絕命毒師》的「說出我的名字」
+          const ans = dx < 1 ? '海森堡：不知道，但我很清楚我在哪裡！' : dx > 1.8 ? '海森堡：速度我很清楚，但我在哪…不知道' : '海森堡：大概知道在哪、大概知道多快…';
+          const [l1, l2] = cycle([['警察：先生，你知道你剛剛開多快嗎？', ans], ['海森堡：說出我的名字。（Say my name.）', '警察：你自己不知道嗎？看來需要做酒精清醒測試。']], t, 5);
+          cop.set(l1); hei.set(l2);
           ch.draw([{ pts: Array.from({ length: 60 }, (_, i) => { const x = 0.3 + i * 0.1; return [x, 0.5 / x]; }), color: 'rgba(255,255,255,.4)', dash: [4, 4], w: 1.2 }], [{ x: dx, y: dp, color: '#4fd1e8', r: 5 }]);
           out({ 'Δx': dx.toFixed(3), 'Δp': dp.toFixed(3), 'Δx·Δp': (dx * dp).toFixed(3) + ' ħ', '下限 ħ/2': '0.500 ħ' });
         },

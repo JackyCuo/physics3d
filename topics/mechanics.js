@@ -2,6 +2,13 @@ import { AMBER, CYAN, RED, WHITE } from './palette.js';
 import * as jojo from './jojo.js';
 // 經典物理・力學
 export const F = {
+  // 寫實版時間暫停：外界時間慢 k 倍＝外界看你快 k 倍
+  // 迎面空氣的滯止溫度（理想氣體、c_p = 1005 J/kg·K；幾千 K 以上空氣會解離，實際較低但一樣燒）
+  stagT: (v, T0 = 293) => T0 + v * v / (2 * 1005),
+  // 外界的光傳到你眼裡，頻率變成 1/k → 波長 ×k
+  seenNm: (nm, k) => nm * k,
+  // 可見光（380–750 nm）裡還看得到的比例：原本 [380/k, 750/k] 與陽光 [300, 750] 的重疊
+  seenBright: k => Math.max(0, Math.min(750, 750 / k) - Math.max(300, 380 / k)) / 370,
   accel: (force, m) => force / m,
   // 互推後：m1 v1 + m2 v2 = 0
   recoil: (m1, m2, J) => [-J / m1, J / m2],
@@ -32,6 +39,7 @@ export const F = {
 };
 
 
+const cycle = (arr, t, sec = 4) => arr[Math.floor(t / sec) % arr.length];
 export default [
   {
     id: 'newton1', realm: 'classic', cat: '力學', title: '牛頓第一定律', en: "Newton's First Law · Inertia", keys: '慣性 inertia',
@@ -838,6 +846,77 @@ export default [
           count.visible = frozen && st >= 1; count.set(`${Math.floor(st)} 秒經過`);
           dmf.mood(hitN || crushed ? 'ouch' : 'happy'); ouch.visible = hitN > 0 || crushed;
           out({ '世界時間': wt.toFixed(2) + ' s', 'DIO 的時間': dt0.toFixed(2) + ' s', '狀態': frozen ? '時間停止' : '時間流動', '蘋果速度': (-av).toFixed(2) + ' m/s 向下' + (frozen ? '（凍結保存）' : ''), '飛刀命中': `${hitN} / ${thrown}`, '壓路機': rState === 'none' ? '—' : rState === 'held' ? `停在 ${RH} m 高，速度 0（時間停止）` : rState === 'fall' ? `落下中 ${(-rv).toFixed(2)} m/s` : `壓扁！撞擊速度 √(2gh) = ${Math.sqrt(2 * G * (RH - 2.2)).toFixed(2)} m/s` });
+        },
+      };
+    },
+  },
+  {
+    id: 'timestopreal', realm: 'classic', cat: '力學', title: '時間暫停（寫實版）', en: 'Time Stop · What Physics Actually Says', keys: '時間停止 寫實 熱障 滯止溫度 音爆 紅移 空氣阻力 the world quicksilver',
+    tex: ['v_{\\text{外界看}} = k\\,u', 'T_{\\text{滯止}} = T_0 + \\dfrac{v^2}{2c_p},\\qquad \\lambda_{\\text{你看到}} = k\\,\\lambda'],
+    explain: '<p>假設全世界的時間變慢 \\(k\\) 倍，只有你正常。你覺得自己只是在散步（速度 \\(u\\)），但對外界來說你的速度是 \\(k\\,u\\)：k = 1000 時，散步 1.4 m/s 就是 1400 m/s，超過四倍音速。</p><p><b>你會燒起來。</b>空氣分子照外界的時間反應，來不及讓開，被你正面撞上、壓縮加熱。迎面空氣的溫度約是 \\(T_0 + v^2/2c_p\\)，跟太空船重返大氣層一樣，衣服先著火，再來是你。</p><p><b>你會看不見。</b>外界的光進到你眼睛，振動頻率在你看來慢了 \\(k\\) 倍，波長變長 \\(k\\) 倍。k = 2 時綠光就變成紅外線，整個世界幾乎全黑，只剩原本的紫外線被拉成可見光。聲音也一樣，全部降成次聲波，什麼都聽不到。</p><p><b>真正的完全停止（k = ∞）</b>更糟：空氣分子完全不動，就像一堵牆，你根本動不了，也吸不到氣。漫畫裡 DIO 沒事，是因為那是替身能力。</p>',
+    watch: ['把 log₁₀k 拉到 2（慢 100 倍）：外界看你是 140 m/s，空氣只熱一點點。', '拉到 3：超過 4 倍音速，身後出現音爆錐，迎面空氣上千度，開始燒起來。', 'k 只要 2，世界就幾乎全黑：可見光全被拉成紅外線。', '打開「完全停止」：空氣變成一堵牆，你一步都走不動。'],
+    params: [
+      { k: 'e', label: '外界時間變慢倍率 log₁₀k', min: 0, max: 4, step: 0.05, v: 3 },
+      { k: 'u', label: '你覺得自己走路的速度 u', min: 0.5, max: 3, step: 0.1, v: 1.4, unit: 'm/s' },
+      { k: 'full', label: '完全停止（k = ∞）', bool: true, v: false },
+    ],
+    grid: false, cam: [0, 3.5, 14], target: [0, 1.4, 0],
+    setup({ THREE, root, U, P, out }) {
+      const ground = U.box(24, 0.1, 6, U.mat(0x2a2620, { rough: 0.9 })); ground.position.y = -0.05;
+      // 你：身體、頭、臉、兩條腿
+      const me = new THREE.Group(), skin = U.mat(0xf1d2b3, { rough: 0.6 }), shirt = U.mat(0x4a6fa5, { rough: 0.7 });
+      const body = U.cyl(0.3, 0.34, 1.1, shirt); body.position.y = 1.35;
+      const head = U.sphere(0.3, skin); head.position.y = 2.2;
+      const face = U.face(0.3); face.position.y = 2.2;
+      const legs = [-1, 1].map(s => { const l = U.beam(0x333a48, 0.09); me.add(l); return l; });
+      me.add(body, head, face);
+      // 定格的路人與雨滴（外界時間慢 k 倍）
+      const by = [-3, 2.5, 6].map(x => { const g = new THREE.Group(), b = U.cyl(0.3, 0.35, 1.6, U.mat(0x8a6a8a)), h = U.sphere(0.28, skin), f = U.face(0.28); b.position.y = 0.8; h.position.y = 1.9; f.position.y = 1.9; g.add(b, h, f); g.position.set(x, 0, -1.8); g.f = f; return g; });
+      const NR = 300, rain = U.points(NR, 0x9fd8ff, 0.07), drops = Array.from({ length: NR }, () => U.V((Math.random() - 0.5) * 22, Math.random() * 8, (Math.random() - 0.5) * 5));
+      // 火焰粒子、音爆錐、變暗的世界
+      const NF = 260, fire = U.points(NF, 0xff7a30, 0.3, true), fl = Array.from({ length: NF }, () => ({ life: 0, p: U.V(), v: U.V() }));
+      const cone = U.mesh(new THREE.ConeGeometry(1, 1, 32, 1, true), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false }));
+      const dark = U.mesh(new THREE.SphereGeometry(30, 24, 16), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, side: THREE.BackSide, depthWrite: false }));
+      dark.renderOrder = 5;
+      const say = U.pop('', 0.5), tLab = U.label('', { size: 0.45, color: '#ff9a50' });
+      // DIO 客串：只在旁邊吐槽
+      const dio = jojo.dio(U, THREE); dio.position.set(-5.5, 0, -2.6); dio.scale.setScalar(0.8);
+      const dSay = U.pop('', 0.42); dSay.position.set(-4.5, 2.9, -2.6);
+      root.add(ground, me, ...by, rain, fire, cone, dark, say, tLab, dio, dSay);
+      let x = -6, walk = 0, nf = 0;
+      return {
+        onParam() { x = -6; },
+        update(dt, P, t) {
+          const k = P.full ? Infinity : 10 ** P.e, u = P.full ? 0 : P.u, v = k * u, T = F.stagT(v), M = v / 343, bright = P.full ? 0 : F.seenBright(k);
+          x += u * dt; if (x > 6) x = -6; if (P.full) x = -1;
+          walk += u * dt * 5;
+          me.position.x = x;
+          const sw = P.full ? 0 : Math.sin(walk) * 0.35;
+          legs.forEach((l, i) => l.set(U.V(0, 0.85, i ? 0.12 : -0.12), U.V((i ? sw : -sw), 0, i ? 0.12 : -0.12)));
+          // 外界：雨滴以 9 m/s ÷ k 落下，路人凍住
+          for (let i = 0; i < NR; i++) { const d = drops[i]; d.y -= 9 / k * dt; if (d.y < 0) d.y += 8; rain.pos.set([d.x, d.y, d.z], i * 3); }
+          rain.flush();
+          by.forEach(b => b.f.look());
+          // 火焰：滯止溫度 600 K 以上開始燒，越熱越多
+          const heat = U.clamp((T - 600) / 2500, 0, 1);
+          for (let n = Math.floor(heat * 160 * dt * 10); n > 0; n--) { const f = fl[nf++ % NF]; f.life = 1; f.p.set(x + 0.35 + Math.random() * 0.15, 0.4 + Math.random() * 2, (Math.random() - 0.5) * 0.6); f.v.set(-1.5 - Math.random() * 2, 0.5 + Math.random(), (Math.random() - 0.5)); }
+          fl.forEach((f, i) => {
+            if (f.life > 0) { f.life -= dt * 1.6; f.p.addScaledVector(f.v, dt); }
+            fire.pos.set(f.life > 0 ? [f.p.x, f.p.y, f.p.z] : [0, 1e4, 0], i * 3);
+            const c = Math.max(0, f.life); fire.col.set([1, 0.3 + 0.6 * c, 0.1 * c], i * 3);
+          });
+          fire.flush();
+          // 音爆錐：半角 = asin(1/M)，尖端在身體前面、往後張開
+          cone.visible = M > 1 && !P.full;
+          if (cone.visible) { const a = Math.asin(1 / M), L = 4; cone.scale.set(L * Math.tan(a), L, L * Math.tan(a)); cone.rotation.z = -Math.PI / 2; cone.position.set(x + 0.4 - L / 2, 1.4, 0); }
+          dark.material.opacity = 0.85 * (1 - bright);
+          face.look().mood(P.full ? 'shock' : T > 1500 ? 'ouch' : T > 400 ? 'shock' : 'happy');
+          say.position.set(x, 3.2, 0); tLab.position.set(x, 3.9, 0);
+          tLab.visible = !P.full && T > 330; tLab.set(T > 10000 ? '迎面空氣 > 10000 K（電漿）' : `迎面空氣 ${Math.round(T)} K`);
+          say.set(P.full ? '動不了！空氣分子凍住了，像一堵牆…也吸不到氣' : T > 1500 ? '燒起來了啊啊啊！' : T > 600 ? '好燙！衣服著火了！' : M > 1 ? '音爆！外界看我超音速了' : bright < 0.3 ? '怎麼一片黑？光都被拉成紅外線了！' : k > 1.5 ? '嗯？世界變慢了…也變暗了' : '一切正常');
+          dio.face.look();
+          dSay.set(cycle(['愚蠢！這就是沒有替身的下場！', 'THE WORLD 不受這些物理限制，因為那是替身！'], t, 3.5));
+          out({ '時間變慢倍率 k': P.full ? '∞' : k < 100 ? k.toFixed(1) : Math.round(k).toLocaleString(), '外界看你的速度': P.full ? '0（動不了）' : v.toFixed(0) + ' m/s', '馬赫數': P.full ? '—' : M.toFixed(2), '迎面空氣溫度': P.full ? '—' : (T > 10000 ? '> 10000 K' : Math.round(T) + ' K'), '你看到的綠光 550 nm': P.full ? '沒有光' : F.seenNm(550, k) < 750 ? Math.round(F.seenNm(550, k)) + ' nm（可見）' : Math.round(F.seenNm(550, k)).toLocaleString() + ' nm（紅外線，看不到）', '你聽到的 1 kHz': P.full ? '沒有聲音' : (1000 / k).toFixed(k > 50 ? 2 : 0) + ' Hz' + (1000 / k < 20 ? '（次聲波）' : '') });
         },
       };
     },

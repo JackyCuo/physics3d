@@ -26,6 +26,9 @@ for (const e of [0, 0.5, 0.9]) for (const M of [0.1, 2, 5]) { const E = F.eccAno
 near(FL.floatFraction(600, 1000), 0.6, 1e-12, '浮體沒入六成');
 assert.equal(FL.floatFraction(7870, 1000), 1, '鐵沉底');
 near(FL.hydraulic(100, 1, 16), 1600, 1e-12, '液壓放大');
+near(F.stagT(1400), 293 + 1400 ** 2 / 2010, 1e-9, '寫實時間暫停：1400 m/s 滯止溫度');
+assert.ok(F.stagT(1400) > 1000 && F.stagT(140) < 310, '寫實時間暫停：k=1000 會燒、k=100 只熱一點');
+near(F.seenBright(1), 1, 1e-12, '正常時全部可見'); assert.ok(F.seenBright(2.6) === 0, 'k ≥ 2.5 可見光全移到紅外線');
 { // 時間暫停的飛刀：照 aimVy 丟出，T 秒後剛好到目標高度
   const T = 0.75, vy = F.aimVy(-0.45, T);
   near(vy * T - 9.8 * T * T / 2, -0.45, 1e-12, '飛刀瞄準 aimVy');
