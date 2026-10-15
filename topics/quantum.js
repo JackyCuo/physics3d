@@ -81,6 +81,10 @@ function bbRGB(T) {
   return [r, g, b].map(v => Math.min(255, Math.max(0, v)) / 255);
 }
 const vecs = (U, n) => Array.from({ length: n }, () => U.V());
+// 卡通裝飾用：整個物件變透明（a = 1 不透明）
+const fade = (o, a) => o.traverse(m => { if (m.material) { m.material.transparent = true; m.material.opacity = a; m.material.depthWrite = a > 0.95; } });
+// 每 sec 秒換一句
+const cycle = (arr, t, sec = 4) => arr[Math.floor(t / sec) % arr.length];
 
 // 位能井／諧振子共用：能階線、本徵函數的螺旋（實部→y、虛部→z）與機率密度
 function levelScene({ root, U, P, out }, o) {
@@ -131,7 +135,8 @@ export default [
       const halo = U.sphere(2.1, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, side: THREE.BackSide, depthWrite: false, blending: THREE.AdditiveBlending }));
       const N = 900, ph = U.points(N, 0xffffff, 0.16, true);
       const ps = Array.from({ length: N }, () => ({ life: -1, d: U.V(), r: 0 }));
-      root.add(ball, halo, ph);
+      const face = U.face(1.6), say = U.pop('', 0.5); say.position.set(0, 2.9, 0);
+      root.add(ball, halo, ph, face, say);
       const ch = chart({ title: '光譜：普朗克（實線）vs 古典（虛線）', x: [0, 3000], y: [0, 1.6], xl: 'λ (nm)', yl: '' });
       let acc = 0, next = 0;
       // 光子個數的分布 ∝ λ·B_λ（B_λ 是能量分布，除以每顆光子的能量 hc/λ）
@@ -141,7 +146,9 @@ export default [
         for (;;) { const nm = 100 + Math.random() * 2900; if (Math.random() * pk < nm * F.planck(nm * 1e-9, T)) return nm; }
       };
       return {
-        update(dt, P) {
+        update(dt, P, t) {
+          face.look().mood(P.T > 7000 ? 'shock' : 'happy');
+          say.set(cycle([P.T < 3000 ? '好冷…只發得出紅外線' : P.T > 7000 ? '好燙！我燒成藍色了！' : '剛剛好，跟太陽差不多～', '古典物理：短波長衝到無限大！（紫外災難）', '普朗克：能量要一份一份給啦！'], t));
           const T = P.T, col = bbRGB(T), bright = Math.min(1, (T / 5000) ** 1.5);
           ball.material.emissive.setRGB(col[0] * bright, col[1] * bright, col[2] * bright);
           halo.material.color.setRGB(...col); halo.material.opacity = 0.05 + 0.15 * bright;
@@ -189,7 +196,9 @@ export default [
       const NPH = 300, NE = 300, phP = U.points(NPH, 0xffffff, 0.2), eP = U.points(NE, 0xf5f7ff, 0.18);
       const phs = Array.from({ length: NPH }, () => ({ s: 2, to: U.V() })), es = Array.from({ length: NE }, () => ({ on: false, p: U.V(), v: U.V() }));
       const lab = U.label('', { color: '#4fd1e8', size: 0.45 }); lab.position.set(0, 5.8, 0);
-      root.add(plate, lamp, cone, phP, eP, lab);
+      const face = U.face(0.9), say = U.pop('', 0.7), ein = U.pop('', 0.6);
+      face.position.set(-0.3, 3.3, 0); say.position.set(0, 7, 0); ein.position.set(-8, 7.6, 0);
+      root.add(plate, lamp, cone, phP, eP, lab, face, say, ein);
       const ch = chart({ title: '電子最大動能 vs 光的頻率', x: [0, 20], y: [0, 6], xl: 'f (10¹⁴ Hz)', yl: 'K (eV)' });
       let acc = 0, ip = 0, ie = 0;
       return {
@@ -210,6 +219,9 @@ export default [
             eP.pos[i * 3] = e.p.x; eP.pos[i * 3 + 1] = e.on ? e.p.y : 1e4; eP.pos[i * 3 + 2] = e.p.z;
           });
           phP.flush(); eP.flush();
+          face.look().mood(KE > 0 ? 'shock' : 'happy');
+          say.set(KE > 0 ? '金屬：電子被打飛了啦！' : P.I > 7 ? '金屬：再亮也沒用～顏色不對！' : '金屬：哼，打不動我～');
+          ein.set(KE > 0 ? '愛因斯坦：看吧，光是一顆一顆的！' : '愛因斯坦：換藍一點的光試試？');
           lab.set(KE > 0 ? `電子動能 ${KE.toFixed(2)} eV` : '沒有電子（能量不夠）');
           const f14 = C / (P.nm * 1e-9) / 1e14, f0 = P.phi / HEV / 1e14;
           ch.draw([{ pts: [[f0, 0], [20, HEV * 2e15 - P.phi]], color: '#4fd1e8' }, { pts: [[0, 0], [f0, 0]], color: 'rgba(255,255,255,.3)' }], [{ x: f14, y: Math.max(0, KE), color: KE > 0 ? '#fff' : '#ff6b6b', r: 5 }, { x: f0, y: 0, color: '#f5b544', text: 'f₀' }]);
@@ -231,7 +243,8 @@ export default [
       const orbit = U.line(97, 0xffffff, 0.15).set(Array.from({ length: 97 }, (_, i) => U.V(R * Math.cos(i / 96 * 6.2832), 0, R * Math.sin(i / 96 * 6.2832))));
       const laps = [1, 0.45, 0.2].map(o => U.line(NP, 0x4fd1e8, o));
       const pts = vecs(U, NP), e = U.sphere(0.14, U.glow(0xf5f7ff));
-      root.add(nuc, orbit, ...laps, e);
+      const face = U.face(0.35), say = U.pop('', 0.45); say.position.set(0, 2.4, 0);
+      root.add(nuc, orbit, ...laps, e, face, say);
       return {
         update(dt, P, t) {
           const N = P.N, A = 0.7 * Math.cos(t * 3);
@@ -244,6 +257,8 @@ export default [
           });
           e.position.set(R * Math.cos(t * 1.2), 0, R * Math.sin(t * 1.2));
           const n = Math.round(N), ok = Math.abs(N - n) < 0.03;
+          face.look().mood(ok ? 'happy' : 'dizzy');
+          say.set(ok ? '電子：首尾接起來了～穩定！' : '電子：接不起來…我自己把自己抵消掉了');
           out({ '波長 λ = 2πr/n': (2 * Math.PI * R / N).toFixed(2), '首尾接得起來': ok ? '是（駐波）' : '否（會抵消）', '對應能階': ok ? `n = ${n}，E = ${F.hydrogenE(n).toFixed(2)} eV` : '不允許', '角動量 L': ok ? `${n} ħ` : '—' });
         },
       };
@@ -269,7 +284,19 @@ export default [
       const hits = U.points(MAXH, 0x4fd1e8, 0.07), fly = U.points(NF, 0xffffff, 0.16), fly2 = U.points(NF, 0xffffff, 0.16);
       const dets = [0, 1].map(() => U.mesh(new THREE.TorusGeometry(0.35, 0.05, 8, 24), U.glow(0xf5b544)));
       dets.forEach(d => { d.rotation.y = Math.PI / 2; });
-      root.add(src, ...walls, screen, hits, fly, fly2, ...dets);
+      // 觀測者（JoJo 的空條承太郎）：打開「觀測」才出現
+      const jo = new THREE.Group(), coat = U.mat(0x1a1d2a, { rough: 0.7 });
+      const jb = U.cyl(0.38, 0.5, 1.9, coat); jb.position.y = 0.95;
+      const jh = U.sphere(0.36, U.mat(0xf1d2b3, { rough: 0.6 })); jh.position.y = 2.2;
+      const jf = U.face(0.36); jf.position.y = 2.2;
+      const cap = U.cyl(0.38, 0.38, 0.3, coat); cap.position.y = 2.48;
+      const brim = U.cyl(0.5, 0.5, 0.04, coat); brim.position.set(0, 2.36, 0.12);
+      const chain = U.box(0.04, 0.8, 0.04, U.mat(0xf2c230, { metal: 0.8 })); chain.position.set(0.3, 1.4, 0.36);
+      jo.add(jb, jh, jf, cap, brim, chain); jo.position.set(-2.2, -2.5, 2.8);
+      const joName = U.label('空條承太郎（觀測者）', { size: 0.45, color: '#c58bff' }), joSay = U.pop('', 0.55), menacing = U.label('ゴ ゴ ゴ ゴ', { size: 0.6, color: '#c58bff' });
+      joName.position.set(-2.2, 0.55, 2.8); joSay.position.set(-2.2, 1.25, 2.8); menacing.position.set(2, 3.2, -3);
+      const eSay = U.pop('', 0.5); eSay.position.set(-9, 1.4, 0);
+      root.add(src, ...walls, screen, hits, fly, fly2, ...dets, jo, joName, joSay, menacing, eSay);
       const ch = chart({ title: '螢幕上的分布：累積（點）vs 理論（線）', x: [-W, W], y: [0, 1.15], xl: '螢幕位置', yl: '' });
       const bins = new Float32Array(64);
       let nh = 0, acc = 0, fl = Array.from({ length: NF }, () => ({ s: 2, z: 0, slit: 0 }));
@@ -286,8 +313,12 @@ export default [
       return {
         actions: { '清空螢幕': clear },
         onParam(k) { if (k === 'd') layout(); if (k !== 'rate') clear(); },
-        update(dt, P) {
+        update(dt, P, t) {
           dets.forEach(d => { d.visible = P.watch; d.material.color.set(0xf5b544); });
+          jo.visible = joName.visible = joSay.visible = menacing.visible = P.watch;
+          jf.look();
+          joSay.set(cycle(['やれやれだぜ…', '被我看著，你只能走一條縫。', '條紋？已經沒了。'], t, 3));
+          eSay.set(P.watch ? '電子：被盯上了…只好乖乖走一條縫' : nh < 300 ? '電子：沒人在看～我兩條縫一起走！' : '電子：看吧，條紋出來了～');
           acc += dt * P.rate;
           for (; acc >= 1; acc--) { const f = fl.find(f => f.s >= 2); if (!f) break; f.s = 0; f.z = sampleZ(); f.slit = Math.random() < 0.5 ? 1 : -1; f.y = (Math.random() - 0.5) * 4.6; }
           fl.forEach((f, i) => {
@@ -331,7 +362,7 @@ export default [
       { k: 'free', label: '自由演化（會攤開）', bool: true, v: true },
     ],
     grid: false, cam: [-4, 8, 22], target: [0, 1, -1.5],
-    setup({ root, U, P, out, chart }) {
+    setup({ THREE, root, U, P, out, chart }) {
       const NP = 400, X = 12, SX = 0.75;
       const axis = U.line(2, 0xffffff, 0.25).set([U.V(-X * SX, 0, 0), U.V(X * SX, 0, 0)]);
       const pax = U.line(2, 0xffffff, 0.25).set([U.V(-X * SX, 0, -4), U.V(X * SX, 0, -4)]);
@@ -339,7 +370,12 @@ export default [
       const l1 = U.label('位置空間 ψ(x)', { color: '#4fd1e8', size: 0.4 }), l2 = U.label('動量空間 |φ(p)|²', { color: '#a78bfa', size: 0.4 });
       l1.position.set(-X * SX + 1.6, 3.4, 0); l2.position.set(-X * SX + 1.8, 2.6, -4);
       const A = vecs(U, NP), B = vecs(U, NP), M = vecs(U, NP);
-      root.add(axis, pax, helix, dens, mom, l1, l2);
+      // 海森堡開車：車子跟著波包中心走
+      const car = new THREE.Group(), cb = U.box(1.2, 0.45, 0.7, U.mat(0xd9534f, { metal: 0.3 })), ct = U.box(0.6, 0.35, 0.6, U.mat(0x9fd8ff, { opacity: 0.6 }));
+      ct.position.set(-0.1, 0.38, 0); car.add(cb, ct);
+      for (const [wx, wz] of [[-0.4, 0.36], [0.4, 0.36], [-0.4, -0.36], [0.4, -0.36]]) { const w = U.cyl(0.16, 0.16, 0.1, U.mat(0x111111)); w.rotation.x = Math.PI / 2; w.position.set(wx, -0.22, wz); car.add(w); }
+      const cop = U.pop('警察：先生，你知道你剛剛開多快嗎？', 0.62), hei = U.pop('', 0.62); car.scale.setScalar(1.6);
+      root.add(axis, pax, helix, dens, mom, l1, l2, car, cop, hei);
       const ch = chart({ title: 'Δx · Δp（曲線是下限 ħ/2）', x: [0, 6], y: [0, 1.4], xl: 'Δx', yl: 'Δp' });
       let tt = 0;
       return {
@@ -360,6 +396,9 @@ export default [
           }
           helix.set(A); dens.set(B); mom.set(M);
           const dx = F.sigmaX(s, tt), dp = F.sigmaP(s);
+          car.position.set(k0 * tt * SX, 4.6, 0);
+          cop.position.set(-3, 7.4, 0); hei.position.set(-3, 6.5, 0);
+          hei.set(dx < 1 ? '海森堡：不知道，但我很清楚我在哪裡！' : dx > 1.8 ? '海森堡：速度我很清楚，但我在哪…不知道' : '海森堡：大概知道在哪、大概知道多快…');
           ch.draw([{ pts: Array.from({ length: 60 }, (_, i) => { const x = 0.3 + i * 0.1; return [x, 0.5 / x]; }), color: 'rgba(255,255,255,.4)', dash: [4, 4], w: 1.2 }], [{ x: dx, y: dp, color: '#4fd1e8', r: 5 }]);
           out({ 'Δx': dx.toFixed(3), 'Δp': dp.toFixed(3), 'Δx·Δp': (dx * dp).toFixed(3) + ' ħ', '下限 ħ/2': '0.500 ħ' });
         },
@@ -379,14 +418,21 @@ export default [
     setup(ctx) {
       const { root, U } = ctx, L = 8, h = 0.17;
       const walls = [-1, 1].map(s => { const w = U.box(0.25, 7, 2.4, U.mat(0x4fd1e8, { opacity: 0.18 })); w.position.set(s * (L / 2 + 0.125), 3.3, 0); return w; });
-      root.add(...walls);
-      return levelScene(ctx, {
+      const say = U.pop('', 0.6); say.position.set(0, 7.6, 0);
+      root.add(...walls, say);
+      const sc = levelScene(ctx, {
         x0: -L / 2 - 0.4, x1: L / 2 + 0.4, sx: 1, top: 6.8, vy: x => Math.abs(x) > L / 2 ? 6.8 : 0,
         n0: 1, nmax: 6, Y: n => h * n * n, E: n => n * n, w: 1.6, amp: 1.1, damp: 2.2,
         span: () => [-L / 2, L / 2],
         psi: (n, x) => F.wellPsi(n, L, x + L / 2),
         readout: (n, m, sup) => ({ '能量 Eₙ': `${n * n} E₁`, '節點數': n - 1, '波長 2L/n': (2 * L / n).toFixed(2), '晃動週期': sup ? `h / ${Math.abs(n * n - m * m)}E₁` : '—（定態）' }),
       });
+      return {
+        update(dt, P, t) {
+          sc.update(dt, P, t);
+          say.set(P.sup ? '粒子：兩層一起來，晃來晃去～' : P.n === 1 ? '粒子：放我出去！最低能量也停不下來（零點能）' : `粒子：第 ${P.n} 層，有 ${P.n - 1} 個地方我絕對不會出現`);
+        },
+      };
     },
   },
   {
@@ -407,7 +453,9 @@ export default [
       const eLine = U.line(2, 0xf5b544, 0.7, true), helix = U.line(NP, 0x4fd1e8), dens = U.line(NP, 0xf5f7ff);
       const axis = U.line(2, 0xffffff, 0.2).set([U.V(-X * SX * 0.6, 0, 0), U.V(X * SX * 0.6, 0, 0)]);
       const A = vecs(U, NP), B = vecs(U, NP);
-      root.add(barrier, eLine, helix, dens, axis);
+      const cats = [0xf0a050, 0xf0a050].map(c => U.cat(0.42, c)), catL = cats.map(() => U.label('', { size: 0.45 }));
+      const wface = U.face(0.4), say = U.pop('', 0.6); say.position.set(0, 6.4, 0);
+      root.add(barrier, eLine, helix, dens, axis, ...cats, ...catL, wface, say);
       const YS = 1.2;
       let tt, done;
       const reset = () => {
@@ -436,8 +484,20 @@ export default [
           else if ((done += dt) > 2) reset();
           barrier.scale.set(P.a * SX, P.V0 * YS, 1); barrier.position.set(P.a * SX / 2, P.V0 * YS / 2, 0);
           eLine.set([U.V(-X * SX * 0.6, P.E * YS, 0), U.V(X * SX * 0.6, P.E * YS, 0)]);
-          let tot = 0, tr = 0;
-          for (let i = 0; i < N; i++) { const p = R[i] * R[i] + I[i] * I[i]; tot += p; if (-X + i * dx > P.a) tr += p; }
+          let tot = 0, tr = 0, xl = 0, xr = 0;
+          for (let i = 0; i < N; i++) { const p = R[i] * R[i] + I[i] * I[i], x = -X + i * dx; tot += p; if (x > P.a) { tr += p; xr += p * x; } else xl += p * x; }
+          // 貓放在左右兩邊機率的重心，透明度＝那邊的機率
+          const pT = tr / tot, sides = [[xl / Math.max(1e-12, tot - tr), 1 - pT], [xr / Math.max(1e-12, tr), pT]];
+          cats.forEach((c, j) => {
+            const [xc, pr] = sides[j], on = pr > 0.005;
+            c.visible = catL[j].visible = on;
+            c.position.set(U.clamp(xc, -X * 0.6, X * 0.6) * SX, P.E * YS + 1.3, 0); c.f.look().mood(j ? 'happy' : tt > 8 / k0 ? 'ouch' : 'happy');
+            fade(c, 0.15 + 0.85 * pr);
+            catL[j].position.set(c.position.x, c.position.y + 0.9, 0); catL[j].set(`${j ? '穿牆的貓' : tt > 8 / k0 ? '反彈的貓' : '貓'} ${(pr * 100).toFixed(1)}%`);
+          });
+          const late = tt > tEnd * 0.5, tunnel = P.E < P.V0 && pT > 0.005;
+          wface.position.set(P.a * SX / 2, P.V0 * YS + 0.6, 0); wface.look().mood(late && tunnel ? 'shock' : 'happy');
+          say.set(!late ? '薛丁格的貓：衝啊——！' : tunnel ? '牆：不可能！我明明比你高！？　貓：我同時撞牆又穿牆了～' : P.E >= P.V0 && pT < 0.995 ? '貓：比牆高還被彈回來一點？量子就是這樣～' : P.E < P.V0 ? '貓：牆太厚了…穿不過去（機率太小）' : '貓：輕鬆通過～');
           const off = (N - NP * 1.2) / 2 | 0;
           for (let j = 0; j < NP; j++) {
             const i = off + Math.round(j * 1.2), x = -X + i * dx;
@@ -464,7 +524,8 @@ export default [
     setup(ctx) {
       const { root, U, P } = ctx, h = 0.7, SX = 1.25;
       const tp = [-1, 1].map(() => U.sphere(0.08, U.glow(0xf5b544)));
-      root.add(...tp);
+      const say = U.pop('', 0.6); say.position.set(0, 7.8, 0);
+      root.add(...tp, say);
       const sc = levelScene(ctx, {
         x0: -4.4, x1: 4.4, sx: SX, top: 7, vy: x => h * x * x / 2,
         n0: 0, nmax: 8, Y: n => h * (n + 0.5), E: n => n + 0.5, w: 2, amp: 1.2, damp: 2.4,
@@ -478,6 +539,7 @@ export default [
           const r = Math.sqrt(2 * P.n + 1);
           tp.forEach((s, i) => s.position.set((i ? r : -r) * SX, h * (P.n + 0.5), 0));
           tp.forEach(s => (s.visible = !P.sup));
+          say.set(P.sup ? '量子彈簧：盪來盪去～像古典的擺' : P.n === 0 ? '量子彈簧：降到最低也還在抖（零點能 ½ħω）' : '量子彈簧：我有偷偷滲出拋物線外喔');
         },
       };
     },
@@ -497,7 +559,9 @@ export default [
       const NPT = 4500, cloud = U.points(NPT, 0xffffff, 0.09, true);
       const nuc = U.sphere(0.07, U.glow(0xff6b6b));
       const axes = [[1, 0, 0], [0, 1, 0], [0, 0, 1]].map(d => U.line(2, 0xffffff, 0.15).set([U.V(...d).multiplyScalar(-5), U.V(...d).multiplyScalar(5)]));
-      const g = new THREE.Group(); g.add(cloud, nuc, ...axes); root.add(g);
+      const g = new THREE.Group(); g.add(cloud, nuc, ...axes);
+      const say = U.pop('', 0.42); say.position.set(0, 4.6, 0);
+      root.add(g, say);
       const POS = [0.31, 0.82, 0.91], NEG = [0.93, 0.36, 0.8];
       let q = {};
       const NAMES = { 1: { 0: 'z', 1: 'x', '-1': 'y' }, 2: { 0: 'z²', 1: 'xz', '-1': 'yz', 2: 'x²−y²', '-2': 'xy' }, 3: { 0: 'z³', 1: 'xz²', '-1': 'yz²', 2: 'z(x²−y²)', '-2': 'xyz', 3: 'x(x²−3y²)', '-3': 'y(3x²−y²)' } };
@@ -531,6 +595,7 @@ export default [
         update(dt) {
           g.rotation.y += dt * 0.15;
           const { n, l, m } = q, sub = 'spdf'[l] + (l ? NAMES[l][m] : '');
+          say.set('電子：問我在哪？' + ['我是一顆球～', '我是啞鈴！', '我是四葉草！', '我形狀太複雜了…'][l]);
           out({ '軌域': `${n}${sub}`, '量子數 (n, ℓ, m)': `(${n}, ${l}, ${m})`, '能量 Eₙ': F.hydrogenE(n).toFixed(2) + ' eV', '節點': `徑向 ${n - l - 1}、角 ${l}` });
         },
       };
@@ -551,7 +616,8 @@ export default [
       const oven = U.box(1.2, 1.2, 1.2, U.mat(0x3a2a1a, { emissive: 0xff7a30, ei: 0.25 })); oven.position.set(-10, 0, 0);
       const screen = U.box(0.1, 6, 6, U.mat(0x1c2030, { rough: 0.9 })); screen.position.set(SCR + 0.1, 0, 0);
       const hits = U.points(MAXH, 0xf5f7ff, 0.15, true), fly = U.points(NF, 0xffffff, 0.12);
-      root.add(oven, screen, hits, fly);
+      const of = U.face(0.6), say = U.pop('', 0.65); of.position.set(-10, 0, 0.1); say.position.set(-2, 4.2, 0);
+      root.add(oven, screen, hits, fly, of, say);
       const stageG = new THREE.Group(); root.add(stageG);
       const AX = { z: 0, x: 90 };
       let st = [], nh = 0, up = 0, dn = 0, acc = 0;
@@ -608,6 +674,8 @@ export default [
             fly.pos[i * 3] = f.x; fly.pos[i * 3 + 1] = f.o.y; fly.pos[i * 3 + 2] = f.o.z;
           });
           fly.flush();
+          of.look();
+          say.set(P.classic ? '古典物理：應該是一整條帶子吧？' : { z: '銀原子：只能選上或下，沒有中間！', zz: '銀原子：已經是上了，再量還是上～', zxz: '銀原子：量了 x 就忘了 z，又變回一半一半！' }[P.mode]);
           const tot = up + dn || 1;
           const theory = { z: '50% / 50%', zz: '100% / 0%', zxz: '50% / 50%' }[P.mode];
           out({ '最後量到 ↑': (up / tot * 100).toFixed(1) + '%', '最後量到 ↓': (dn / tot * 100).toFixed(1) + '%', '量子理論': P.classic ? '（古典模式）' : theory, '已到螢幕': up + dn + ' 顆' });
@@ -637,7 +705,12 @@ export default [
       const labs = [['|0⟩', 0, 0, 1], ['|1⟩', 0, 0, -1], ['|+⟩', 1, 0, 0], ['|−⟩', -1, 0, 0], ['|+i⟩', 0, 1, 0], ['|−i⟩', 0, -1, 0]].map(([s, x, y, z]) => { const l = U.label(s, { color: '#e9edf5', size: 0.42 }); l.position.copy(T3(x, y, z).multiplyScalar(R * 1.3)); return l; });
       const arrow = U.arrow(0x4fd1e8, 0.07), tip = U.sphere(0.13, U.glow(0xffffff));
       const proj = U.line(2, 0xf5b544, 0.8, true), pz = U.sphere(0.09, U.glow(0xf5b544));
-      root.add(sph, ...rings, ...axes, ...labs, arrow, tip, proj, pz);
+      // 薛丁格的貓：|0⟩ = 活、|1⟩ = 死（卡通版只是暈倒）
+      const cat = U.cat(0.55), box = U.box(1.8, 1, 1.4, U.mat(0x8a5a2b, { rough: 0.8 }));
+      cat.position.set(-5.2, -1.6, 1.5); box.position.set(-5.2, -2.6, 1.5);
+      const catL = U.label('', { size: 0.36, color: '#ffe066' }), say = U.pop('', 0.4);
+      catL.position.set(-5.2, -0.6, 1.5); say.position.set(-3.5, 4.6, 0);
+      root.add(sph, ...rings, ...axes, ...labs, arrow, tip, proj, pz, cat, box, catL, say);
       const n = { x: 0, y: 0, z: 1 };
       let last = '—', c0 = 0, c1 = 0;
       const fromP = () => { const th = P.th * D, ph = P.ph * D; n.x = Math.sin(th) * Math.cos(ph); n.y = Math.sin(th) * Math.sin(ph); n.z = Math.cos(th); };
@@ -652,11 +725,16 @@ export default [
           '量測 1000 次（統計）': () => { for (let i = 0; i < 1000; i++) Math.random() < p0() ? c0++ : c1++; last = '統計'; },
           '清除統計': () => { c0 = c1 = 0; last = '—'; },
         },
-        update(dt, P) {
+        update(dt, P, t) {
           if (P.prec) { const w = 1.2 * dt, x = n.x; n.x = x * Math.cos(w) - n.y * Math.sin(w); n.y = x * Math.sin(w) + n.y * Math.cos(w); }
           const v = T3(n.x, n.y, n.z).multiplyScalar(R);
           arrow.set(U.V(), v); tip.position.copy(v);
           proj.set([v, U.V(0, v.y, 0)]); pz.position.set(0, v.y, 0);
+          const pc = p0(), alive = pc > 0.999, dead = pc < 0.001;
+          cat.f.look().mood(alive ? 'happy' : dead ? 'dizzy' : (t * 3 | 0) % 2 ? 'happy' : 'dizzy');
+          fade(cat, alive || dead ? 1 : 0.35 + 0.3 * Math.abs(Math.sin(t * 4)));
+          catL.set(alive ? '活貓 |0⟩' : dead ? '死貓 |1⟩（卡通版只是暈倒）' : `又活又死？活 ${(pc * 100).toFixed(0)}%`);
+          say.set(alive ? '打開箱子：活的！喵～' : dead ? '打開箱子：牠倒下了…（死）' : '薛丁格：打開箱子（量測）之前，貓又活又死！');
           const th = Math.acos(Math.max(-1, Math.min(1, n.z))), ph = (Math.atan2(n.y, n.x) / D + 360) % 360, tot = c0 + c1;
           out({ 'α = cos(θ/2)': Math.cos(th / 2).toFixed(3), 'β = e^{iφ} sin(θ/2)': `${Math.sin(th / 2).toFixed(3)} ∠${ph.toFixed(0)}°`, 'P(0)': (p0() * 100).toFixed(1) + '%', 'P(1)': ((1 - p0()) * 100).toFixed(1) + '%', '上次量測': last, '統計 0 : 1': tot ? `${c0} : ${c1}（${(c0 / tot * 100).toFixed(1)}%）` : '—' });
         },
@@ -688,12 +766,14 @@ export default [
         return { g, ax, lamp, lab, flash: 0 };
       });
       const fly = U.points(NF, 0xffffff, 0.18), fl = Array.from({ length: NF / 2 }, () => ({ on: false }));
-      root.add(src, fly);
+      dets.forEach(d => { d.face = U.face(0.32); d.lamp.add(d.face); });
+      const say = U.pop('', 0.6); say.position.set(0, 2.8, 0);
+      root.add(src, fly, say);
       const ch = chart({ title: '關聯 E vs 角度差（實線量子、虛線隱變數）', x: [0, 180], y: [-1.05, 1.05], xl: '|a − b| (°)', yl: 'E' });
       let acc = 0, n = 0, same = 0, key = '';
       return {
         actions: { '清除統計': () => { n = same = 0; } },
-        update(dt, P) {
+        update(dt, P, t) {
           const k = P.a + ',' + P.b; if (k !== key) { key = k; n = same = 0; }
           dets[0].ax.rotation.x = P.a * D; dets[1].ax.rotation.x = P.b * D;
           acc += dt * P.rate;
@@ -707,13 +787,14 @@ export default [
               f.x += dt * 7;
               if (f.x >= X) {
                 f.on = false; n++; if (f.A === f.B) same++;
-                [f.A, f.B].forEach((r, j) => { dets[j].lamp.material.emissive.set(r > 0 ? 0xf5b544 : 0x4fd1e8); dets[j].flash = 0.25; dets[j].lab.set(r > 0 ? '+1' : '−1'); });
+                [f.A, f.B].forEach((r, j) => { dets[j].lamp.material.emissive.set(r > 0 ? 0xf5b544 : 0x4fd1e8); dets[j].flash = 0.25; dets[j].lab.set(r > 0 ? '+1' : '−1'); dets[j].face.mood(r > 0 ? 'happy' : 'shock'); });
               }
             }
             fly.pos.set(f.on ? [-f.x, 0, 0, f.x, 0, 0] : [0, 1e4, 0, 0, 1e4, 0], i * 6);
           });
           fly.flush();
-          dets.forEach(d => { d.flash -= dt; if (d.flash <= 0) d.lamp.material.emissive.set(0x333333); });
+          dets.forEach(d => { d.flash -= dt; if (d.flash <= 0) d.lamp.material.emissive.set(0x333333); d.face.look(); });
+          say.set(cycle(['愛因斯坦：鬼魅般的超距作用？我不信！', '愛因斯坦：上帝不擲骰子！', '波耳：別告訴上帝該怎麼做！', '貝爾：吵什麼，量 CHSH 就知道了'], t));
           const Em = n ? (2 * same - n) / n : 0, dd = Math.abs(P.a - P.b);
           const xs = Array.from({ length: 61 }, (_, i) => i * 3);
           ch.draw([

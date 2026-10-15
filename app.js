@@ -175,6 +175,13 @@ const U = {
     g.tick = dt => { g.rotation.y += dt * 5; return g; };
     return g;
   },
+  // 卡通貓頭（半徑 r，臉朝 +z）：c.f 是臉
+  cat(r, color = 0xf0a050) {
+    const c = new THREE.Group(), m = U.mat(color, { rough: 0.6 }), f = U.face(r);
+    for (const s of [-1, 1]) { const e = U.cyl(0, 0.4 * r, 0.8 * r, m, 8); e.position.set(s * 0.6 * r, r, 0); c.add(e); }
+    c.add(U.sphere(r, m), f); c.f = f;
+    return c;
+  },
   // 漫畫音效字（白底黑字）
   pop: (text, size = 0.5) => U.label(text, { bg: 'rgba(255,255,255,.92)', color: '#111', size }),
 };

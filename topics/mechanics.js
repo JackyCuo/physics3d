@@ -107,9 +107,7 @@ export default [
       for (const [wx, wz] of [[-0.35, -0.3], [0.35, -0.3], [-0.35, 0.3], [0.35, 0.3]]) { const w = U.sphere(0.12, U.mat(0x111111)); w.position.set(wx, -0.38, wz); cart.add(w); }
       const CATC = [0xf0a050, 0x8a8f99, 0xf2f2f2, 0x5a5a5a];
       const cats = Array.from({ length: 8 }, (_, i) => {
-        const c = new THREE.Group(), m = U.mat(CATC[i % 4], { rough: 0.6 }), f = U.face(0.15);
-        for (const s of [-1, 1]) { const e = U.cyl(0, 0.06, 0.12, m, 8); e.position.set(s * 0.09, 0.15, 0); c.add(e); }
-        c.add(U.sphere(0.15, m), f); c.f = f;
+        const c = U.cat(0.15, CATC[i % 4]);
         c.position.set(-0.33 + (i % 4) * 0.22, 0.45, i < 4 ? 0.15 : -0.15);
         cart.add(c); return c;
       });
@@ -761,11 +759,12 @@ export default [
     id: 'timestop', realm: 'classic', cat: '力學', title: '時間暫停（DIO 版）', en: 'Time Stop · THE WORLD (JoJo parody)', keys: 'jojo dio 時間停止 the world 世界 慣性 動量 狀態',
     tex: ['\\Delta t_{\\text{世界}} = 0 \;\\Rightarrow\; \\vec x,\\ \\vec v\\ \\text{凍結}', '\\text{恢復後：}\\ \\vec x(t) = \\vec x_0 + \\vec v_0 t + \\tfrac12 \\vec g t^2'],
     explain: '<p>「THE WORLD！時間啊，停止吧！」——時間停止是《JoJo 的奇妙冒險》裡 DIO 的替身能力，真實物理做不到。但拿它來想一件事很有用：<b>位置和速度是物體的「狀態」</b>。</p><p>時間停了，每個東西的位置和速度都被凍結；速度沒有消失，只是「時間」不走了。時間一恢復，物體就從凍結的狀態接著照牛頓定律運動：掉到一半的蘋果繼續加速往下掉，DIO 丟出去的飛刀帶著原本的速度一起飛向目標。</p><p>所以動量 \\(\\vec p = m\\vec v\\) 不需要「時間在走」才存在——它是物體當下的狀態。</p>',
-    watch: ['時間停止時蘋果停在半空，但青色速度箭頭還在：速度被保存著。', '時間恢復後，蘋果從停住前的速度接著加速，只是整段往後延。', 'DIO 在停止的時間裡丟出的飛刀，離手一下就停住；時間一動，全部同時飛向木頭人。', '右側「世界時間」在停止時不動，「DIO 的時間」照走。'],
+    watch: ['「ロードローラーだッ！」壓路機在停止的時間裡放到木頭人頭上、速度是 0；時間一動才開始自由落體，撞上時的速度就是 √(2gh)。', '時間停止時蘋果停在半空，但青色速度箭頭還在：速度被保存著。', '時間恢復後，蘋果從停住前的速度接著加速，只是整段往後延。', 'DIO 在停止的時間裡丟出的飛刀，離手一下就停住；時間一動，全部同時飛向木頭人。', '右側「世界時間」在停止時不動，「DIO 的時間」照走。'],
     params: [
       { k: 'ts', label: '時間停止秒數', min: 2, max: 9, step: 1, v: 5, unit: 's' },
       { k: 'n', label: '飛刀數量', min: 1, max: 12, step: 1, v: 8 },
       { k: 'vk', label: '飛刀速度', min: 6, max: 20, step: 0.5, v: 12, unit: 'm/s' },
+      { k: 'rr', label: '最後丟壓路機', bool: true, v: true },
     ],
     grid: false, cam: [0, 4, 13], target: [0, 1.8, 0],
     setup({ THREE, root, U, P, out }) {
@@ -799,9 +798,18 @@ export default [
       });
       const quote = U.pop('', 0.42), count = U.label('', { size: 0.6, color: '#ffe066' }), ouch = U.pop('嗚啊啊！', 0.42), menacing = U.label('ゴ ゴ ゴ ゴ', { size: 0.7, color: '#c58bff' });
       quote.position.set(-5, 3.3, 0); count.position.set(0, 4.6, 0); ouch.position.set(TGT.x + 0.45, 3, 0); menacing.position.set(2.5, 3.6, 0);
+      // 壓路機（ロードローラー）：停止的最後一秒出現在木頭人正上方，靜止；時間恢復後自由落體
+      const RH = 6.5, roller = new THREE.Group(), ryel = U.mat(0xf2c230, { rough: 0.5 });
+      const drum = U.cyl(0.65, 0.65, 1.8, U.mat(0x8a8f99, { metal: 0.8, rough: 0.3 })); drum.rotation.x = Math.PI / 2; drum.position.set(0.9, 0.65, 0);
+      const rbody = U.box(1.8, 0.9, 1.5, ryel); rbody.position.set(-0.4, 0.75, 0);
+      const cabin = U.box(0.8, 0.8, 1.1, ryel); cabin.position.set(-0.6, 1.6, 0);
+      const rtext = U.label('ROAD ROLLER', { size: 0.22, color: '#111' }); rtext.position.set(-0.4, 0.75, 0.8);
+      roller.add(drum, rbody, cabin, rtext);
+      const dogo = U.pop('ドゴォ！', 0.6); dogo.position.set(TGT.x + 0.45, 1.6, 0.8);
+      root.add(roller, dogo);
       root.add(ground, tint, dio, dArm, dName, world, dummy, apple, aV, quote, count, ouch, menacing, ...knives);
-      let ph, pt, st, wt, dt0, ay, av, thrown, hitN;   // ph：normal → stop → flow；st：停止後經過的秒數；wt：世界時間；dt0：DIO 的時間
-      const reset = () => { ph = 'normal'; pt = 2.5; st = wt = dt0 = 0; ay = 4.5; av = 0; thrown = hitN = 0; knives.forEach(k => { k.visible = false; k.s = null; }); };
+      let ph, pt, st, wt, dt0, ay, av, thrown, hitN, ry, rv, rState;   // rState：none → held（停止中靜止在空中）→ fall → crushed   // ph：normal → stop → flow；st：停止後經過的秒數；wt：世界時間；dt0：DIO 的時間
+      const reset = () => { ph = 'normal'; pt = 2.5; st = wt = dt0 = 0; ay = 4.5; av = 0; thrown = hitN = 0; ry = RH; rv = 0; rState = 'none'; knives.forEach(k => { k.visible = false; k.s = null; }); };
       reset();
       const stop = () => { if (ph === 'normal') { ph = 'stop'; st = 0; } };
       return {
@@ -820,7 +828,8 @@ export default [
               k.s = { p: U.V(HAND.x, HAND.y, (thrown / (N + 1) - 0.5) * 1.2), v: U.V(P.vk, F.aimVy(TGT.y - HAND.y, T, G), 0), held: 0, lim: 0.06 + 0.2 * ((thrown * 5) % N) / N, stuck: false };   // 每把離手後停住的距離不同，散開來
               k.visible = true;
             }
-            if (st >= P.ts) { ph = 'flow'; pt = 0; }
+            if (P.rr && rState === 'none' && st >= P.ts - 1.2) rState = 'held';
+            if (st >= P.ts) { ph = 'flow'; pt = 0; if (rState === 'held') rState = 'fall'; }
           } else if (ph === 'flow' && (pt += dt) > 4.5) reset();
           for (const k of knives) {
             const s = k.s;
@@ -832,6 +841,13 @@ export default [
             if (s.p.x >= TGT.x - 0.1) { s.p.x = TGT.x - 0.1; s.stuck = true; hitN++; }
             k.position.copy(s.p); k.rotation.z = Math.atan2(s.v.y, s.v.x);
           }
+          // 壓路機底部撞到木頭人頭頂（高 2.2）就壓扁
+          if (rState === 'fall') { rv -= G * wdt; ry += rv * wdt; if (ry <= 2.2) { rState = 'crushed'; pt = Math.min(pt, 2); } }
+          const crushed = rState === 'crushed';
+          roller.visible = rState !== 'none'; roller.position.set(TGT.x - 0.1, crushed ? 0.6 : ry, 0);
+          dummy.scale.y = crushed ? 0.27 : 1; dummy.position.y = crushed ? 0.3 : 1.1;
+          dogo.visible = crushed;
+          knives.forEach(k => { if (k.s?.stuck) k.visible = !crushed; });
           av -= G * wdt; ay += av * wdt;
           if (ay < 0.22) { ay = 4.5; av = 0; }
           apple.position.set(0.5, ay, 1.2); aV.set(U.V(0.9, ay, 1.2), U.V(0, av * 0.12, 0));
@@ -839,12 +855,12 @@ export default [
           world.position.y = 0.4 + 0.1 * Math.sin(dt0 * 3);
           const sw = frozen && st > 0.8 && thrown < N ? Math.sin(st * 20) : 0;   // 丟飛刀的手
           dArm.set(U.V(-4.7, 1.45, 0), U.V(HAND.x, HAND.y + 0.15 * sw, 0));
-          quote.set(frozen ? (st < 0.8 ? 'THE WORLD！時間啊，停止吧！' : thrown < N ? '無駄無駄無駄無駄！' : '（時間停止中）')
-            : ph === 'flow' ? (pt < 1.5 ? '然後，時間開始流動…' : 'WRYYYYY！')
+          quote.set(frozen ? (st < 0.8 ? 'THE WORLD！時間啊，停止吧！' : thrown < N ? '無駄無駄無駄無駄！' : rState === 'held' ? '壓路機啊！（ロードローラーだッ！）' : '（時間停止中）')
+            : ph === 'flow' ? (crushed ? 'WRYYYYY！' : rState === 'fall' ? '然後，時間開始流動…壓扁吧！' : pt < 1.5 ? '然後，時間開始流動…' : 'WRYYYYY！')
             : ['是我，DIO 噠！', '你記得自己至今吃過多少片麵包嗎？'][Math.floor(dt0 / 3) % 2]);
           count.visible = frozen && st >= 1; count.set(`${Math.floor(st)} 秒經過`);
-          dmf.mood(hitN ? 'ouch' : 'happy'); ouch.visible = hitN > 0;
-          out({ '世界時間': wt.toFixed(2) + ' s', 'DIO 的時間': dt0.toFixed(2) + ' s', '狀態': frozen ? '時間停止' : '時間流動', '蘋果速度': (-av).toFixed(2) + ' m/s 向下' + (frozen ? '（凍結保存）' : ''), '飛刀命中': `${hitN} / ${thrown}` });
+          dmf.mood(hitN || crushed ? 'ouch' : 'happy'); ouch.visible = hitN > 0 || crushed;
+          out({ '世界時間': wt.toFixed(2) + ' s', 'DIO 的時間': dt0.toFixed(2) + ' s', '狀態': frozen ? '時間停止' : '時間流動', '蘋果速度': (-av).toFixed(2) + ' m/s 向下' + (frozen ? '（凍結保存）' : ''), '飛刀命中': `${hitN} / ${thrown}`, '壓路機': rState === 'none' ? '—' : rState === 'held' ? `停在 ${RH} m 高，速度 0（時間停止）` : rState === 'fall' ? `落下中 ${(-rv).toFixed(2)} m/s` : `壓扁！撞擊速度 √(2gh) = ${Math.sqrt(2 * G * (RH - 2.2)).toFixed(2)} m/s` });
         },
       };
     },
