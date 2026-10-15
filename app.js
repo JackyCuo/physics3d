@@ -139,6 +139,44 @@ const U = {
   clamp: (x, a, b) => Math.min(b, Math.max(a, x)),
   // 給 vertex color 用：數值 0..1 → 藍到紅
   heat(t, out = new THREE.Color()) { return out.setHSL(0.66 - 0.66 * U.clamp(t, 0, 1), 0.9, 0.55); },
+  // ---- 卡通裝飾（只是外觀，不影響物理） ----
+  // 卡通臉：放在半徑 r 的頭／身體中心，臉朝 +z；f.mood('happy'|'shock'|'ouch'|'dizzy')；f.look() 讓臉轉向鏡頭
+  face(r) {
+    const g = new THREE.Group(), white = U.mat(0xffffff, { rough: 0.3 }), black = U.mat(0x111111, { rough: 0.3 });
+    const eyes = [], pupils = [], xs = [];
+    for (const s of [-1, 1]) {
+      const e = U.sphere(0.24 * r, white); e.position.set(s * 0.34 * r, 0.18 * r, 0.8 * r); e.scale.z = 0.6;
+      const p = U.sphere(0.12 * r, black); p.position.set(s * 0.34 * r, 0.18 * r, 0.93 * r);
+      const x = new THREE.Group(); x.position.set(s * 0.34 * r, 0.18 * r, 0.95 * r);
+      for (const a of [1, -1]) { const b = U.box(0.4 * r, 0.08 * r, 0.05 * r, black); b.rotation.z = a * Math.PI / 4; x.add(b); }
+      eyes.push(e); pupils.push(p); xs.push(x); g.add(e, p, x);
+    }
+    const smile = U.mesh(new THREE.TorusGeometry(0.22 * r, 0.05 * r, 6, 16, Math.PI), black);
+    smile.rotation.z = Math.PI; smile.position.set(0, -0.12 * r, 0.9 * r);
+    const O = U.sphere(0.14 * r, black); O.scale.z = 0.5; O.position.set(0, -0.3 * r, 0.9 * r);
+    g.add(smile, O);
+    g.mood = m => {
+      if (m === g._m) return g;
+      g._m = m;
+      const x = m === 'ouch' || m === 'dizzy';
+      eyes.forEach(e => { e.visible = !x; e.scale.setScalar(m === 'shock' ? 1.3 : 1); e.scale.z *= 0.6; });
+      pupils.forEach(p => { p.visible = !x; p.scale.setScalar(m === 'shock' ? 0.6 : 1); });
+      xs.forEach(e => { e.visible = x; });
+      smile.visible = m === 'happy' || m === 'dizzy'; O.visible = !smile.visible;
+      return g;
+    };
+    g.look = () => { g.lookAt(camera.position); return g; };
+    return g.mood('happy');
+  },
+  // 頭上轉圈的星星：s.tick(dt)
+  stars(R = 0.5, n = 5) {
+    const g = new THREE.Group(), m = U.glow(0xffe066);
+    for (let i = 0; i < n; i++) { const s = U.mesh(new THREE.OctahedronGeometry(0.09), m); s.position.set(R * Math.cos(i / n * 6.283), 0, R * Math.sin(i / n * 6.283)); g.add(s); }
+    g.tick = dt => { g.rotation.y += dt * 5; return g; };
+    return g;
+  },
+  // 漫畫音效字（白底黑字）
+  pop: (text, size = 0.5) => U.label(text, { bg: 'rgba(255,255,255,.92)', color: '#111', size }),
 };
 const DOT = (() => {
   const c = document.createElement('canvas'); c.width = c.height = 64;
