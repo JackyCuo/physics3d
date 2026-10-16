@@ -109,9 +109,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .eq { overflow-x: auto; overflow-y: hidden; }
 #formula .katex-display { margin: 6px 0; }
 #formula .katex { font-size: 1.28em; }
-#syms { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 12px 0 0; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.08); font-size: 14px; }
+#symDet { margin-top: 8px; border-top: 1px solid rgba(255,255,255,.08); }
+#symDet[hidden] { display: none; }
+#syms { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 4px 0 0; font-size: 14px; }
 #syms dt { color: #fff; text-align: right; white-space: nowrap; }
-#syms[hidden] { display: none; }
 #syms dd { margin: 0; color: rgba(233,237,245,.78); }
 .formulaCard .core { background: linear-gradient(160deg, color-mix(in srgb, var(--acc) 10%, rgba(13,14,20,.9)), rgba(13,14,20,.9) 60%); }
 .param { display: block; margin: 0 0 16px; }
@@ -142,12 +143,13 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 #explain { color: rgba(233,237,245,.82); }
 #explain p { margin: 0 0 10px; } #explain p:last-child { margin: 0; }
 #explain b, #watch b { color: var(--acc); font-weight: 500; }
-#deriveDet summary { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: -12px 0; cursor: pointer; list-style: none; }
-#deriveDet summary::-webkit-details-marker { display: none; }
-#deriveDet summary h4 { margin: 0; }
-#deriveDet summary span { margin-left: auto; font: 13px var(--mono); color: var(--acc); }
-#deriveDet summary span::after { content: ' ▾'; }
-#deriveDet[open] summary span::after { content: ' ▴'; }
+.fold summary { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; list-style: none; }
+.fold summary::-webkit-details-marker { display: none; }
+.fold summary h4 { margin: 0; }
+.fold summary span { margin-left: auto; font: 13px var(--mono); color: var(--acc); }
+.fold summary span::after { content: ' ▾'; }
+.fold[open] summary span::after { content: ' ▴'; }
+#deriveDet summary { margin: -12px 0; }
 #deriveDet[open] summary { margin-bottom: 4px; }
 #derive { margin: 0; padding-left: 20px; color: rgba(233,237,245,.82); }
 #derive li { margin-bottom: 12px; } #derive li::marker { color: var(--acc); font: 13px var(--mono); }
@@ -245,11 +247,11 @@ dialog form { margin-top: 18px; text-align: right; }
 <aside id="panel">
   <div class="top"><span class="eyebrow" id="eyebrow"></span><button class="ghost" id="helpBtn">說明</button></div>
   <div><h1 id="title"></h1><p id="en"></p></div>
-  <div class="shell card formulaCard"><div class="core"><h4>方程式</h4><div id="formula"></div><dl id="syms"></dl></div></div>
+  <div class="shell card formulaCard"><div class="core"><h4>方程式</h4><div id="formula"></div><details class="fold" id="symDet"><summary><h4>符號說明</h4><span id="symN"></span></summary><dl id="syms"></dl></details></div></div>
   <div class="shell card" id="paramBox"><div class="core"><h4>調整參數</h4><div id="params"></div></div></div>
   <div class="shell card" id="outBox" hidden><div class="core"><h4>即時數值</h4><div id="outs"></div></div></div>
   <div class="shell card"><div class="core"><h4>原理</h4><div id="explain"></div></div></div>
-  <div class="shell card" id="deriveBox"><div class="core"><details id="deriveDet"><summary><h4>推導過程</h4><span id="deriveN"></span></summary><ol id="derive"></ol></details></div></div>
+  <div class="shell card" id="deriveBox"><div class="core"><details class="fold" id="deriveDet"><summary><h4>推導過程</h4><span id="deriveN"></span></summary><ol id="derive"></ol></details></div></div>
   <div class="shell card" id="watchBox"><div class="core"><h4>觀察重點</h4><ul id="watch"></ul></div></div>
 </aside>
 

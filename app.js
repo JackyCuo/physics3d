@@ -290,7 +290,9 @@ function renderPanel(tp) {
   fit($('#formula'), ft);
   const sy = SYMS[tp.id] || [];
   $('#syms').innerHTML = sy.map(([k, d]) => `<dt>${tex(k, false)}</dt><dd>${rich(d)}</dd>`).join('');
-  $('#syms').hidden = !sy.length;
+  $('#symDet').hidden = !sy.length;
+  $('#symDet').open = false;
+  $('#symN').textContent = `${sy.length} 個`;
   $('#explain').innerHTML = rich(tp.explain || '');
   const dv = DERIV[tp.id] || [];
   $('#deriveBox').hidden = !dv.length;
