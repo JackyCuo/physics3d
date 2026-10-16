@@ -6,12 +6,19 @@ const REALMS = { classic: '經典物理', theory: '理論物理', quantum: '量�
 const MODS = ['mechanics', 'fluids', 'thermo', 'waves', 'optics', 'em', 'relativity', 'cosmology', 'analytic', 'quantum'];
 const TOPICS = (await Promise.all(MODS.map(m => import(`./topics/${m}.js`)))).flatMap(m => m.default);
 const SYMS = (await import('./topics/symbols.js')).default;
+const DERIV = (await import('./topics/derivations.js')).default;
 
 const $ = s => document.querySelector(s);
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; };
 const tex = (s, display) => katex.renderToString(s, { displayMode: display, throwOnError: false });
 // 說明文字裡的 \( ... \) 換成 KaTeX
 const rich = html => html.replace(/\\\((.+?)\\\)/g, (_, s) => tex(s, false));
+// 一行放不下的式子在 ⇒、\qquad 處斷成多行（checks/tex.mjs 用同一個規則檢查斷開後還能解析）
+const SPLIT = / (?=\\;\\Rightarrow)|,?\\q?quad /;
+const eq = s => `<div class="eq">${tex(s, true)}</div>`;
+const fit = (box, srcs) => box.querySelectorAll('.eq').forEach((d, i) => {
+  if (d.scrollWidth > d.clientWidth + 1) d.innerHTML = srcs[i].split(SPLIT).map(x => tex(x, true)).join('');
+});
 
 // ---------- 3D 基礎 ----------
 const stage = $('#stage');
@@ -278,11 +285,17 @@ function renderPanel(tp) {
   $('#title').textContent = tp.title;
   $('#en').textContent = tp.en || '';
   $('#mTitle').textContent = tp.title;
-  $('#formula').innerHTML = [].concat(tp.tex).map(s => tex(s, true)).join('');
+  const ft = [].concat(tp.tex);
+  $('#formula').innerHTML = ft.map(eq).join('');
+  fit($('#formula'), ft);
   const sy = SYMS[tp.id] || [];
   $('#syms').innerHTML = sy.map(([k, d]) => `<dt>${tex(k, false)}</dt><dd>${rich(d)}</dd>`).join('');
   $('#syms').hidden = !sy.length;
   $('#explain').innerHTML = rich(tp.explain || '');
+  const dv = DERIV[tp.id] || [];
+  $('#deriveBox').hidden = !dv.length;
+  $('#derive').innerHTML = dv.map(([t, e]) => `<li><p>${rich(t)}</p>${e ? eq(e) : ''}</li>`).join('');
+  fit($('#derive'), dv.map(r => r[1]).filter(Boolean));
   const w = $('#watch'); w.replaceChildren(...(tp.watch || []).map(s => { const li = el('li'); li.innerHTML = rich(s); return li; }));
   $('#watchBox').hidden = !tp.watch?.length;
 

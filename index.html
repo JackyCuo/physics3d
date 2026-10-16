@@ -105,7 +105,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .card { margin-bottom: 14px; }
 .card .core { padding: 16px 18px; }
 .card h4 { margin: 0 0 10px; font: 500 12px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--faint); }
-#formula { overflow-x: auto; overflow-y: hidden; padding: 4px 0; color: #fff; }
+#formula { padding: 4px 0; color: #fff; }
+.eq { overflow-x: auto; overflow-y: hidden; }
 #formula .katex-display { margin: 6px 0; }
 #formula .katex { font-size: 1.28em; }
 #syms { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 12px 0 0; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.08); font-size: 14px; }
@@ -141,6 +142,11 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 #explain { color: rgba(233,237,245,.82); }
 #explain p { margin: 0 0 10px; } #explain p:last-child { margin: 0; }
 #explain b, #watch b { color: var(--acc); font-weight: 500; }
+#derive { margin: 0; padding-left: 20px; color: rgba(233,237,245,.82); }
+#derive li { margin-bottom: 12px; } #derive li::marker { color: var(--acc); font: 13px var(--mono); }
+#derive p { margin: 0 0 4px; }
+#derive .katex { font-size: 1.05em; }
+#derive .katex-display { margin: 4px 0 0; padding: 2px 0; color: #fff; }
 #watch { margin: 0; padding-left: 18px; color: rgba(233,237,245,.82); }
 #watch li { margin-bottom: 6px; } #watch li::marker { color: var(--acc); }
 .ghost { min-height: 44px; padding: 0 16px; border-radius: 99px; border: 1px solid var(--hair); background: rgba(255,255,255,.03); color: var(--mute); font-size: 13px; }
@@ -236,6 +242,7 @@ dialog form { margin-top: 18px; text-align: right; }
   <div class="shell card" id="paramBox"><div class="core"><h4>調整參數</h4><div id="params"></div></div></div>
   <div class="shell card" id="outBox" hidden><div class="core"><h4>即時數值</h4><div id="outs"></div></div></div>
   <div class="shell card"><div class="core"><h4>原理</h4><div id="explain"></div></div></div>
+  <div class="shell card" id="deriveBox"><div class="core"><h4>推導過程</h4><ol id="derive"></ol></div></div>
   <div class="shell card" id="watchBox"><div class="core"><h4>觀察重點</h4><ul id="watch"></ul></div></div>
 </aside>
 
