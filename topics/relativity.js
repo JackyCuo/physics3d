@@ -309,7 +309,7 @@ export default [
   },
   {
     id: 'zeldovich', realm: 'theory', cat: '相對論', title: '澤爾多維奇效應（飆馬野郎版）', en: 'Zel’dovich Effect · Rotational Superradiance (Steel Ball Run parody)', keys: '澤爾多維奇 zeldovich 超輻射 superradiance 旋轉都卜勒 角動量 黑洞 彭羅斯 jojo 飆馬野郎 steel ball run 傑洛 鋼球 回轉',
-    tex: ["\\omega' = \\omega - m\\Omega", "\\text{吸收} \\propto \\omega - m\\Omega \;\\Rightarrow\; m\\Omega > \\omega \\text{ 時變成放大}"],
+    tex: ["\\omega' = \\omega - m\\Omega", "\\text{吸收} \\propto \\omega - m\\Omega \\;\\Rightarrow\\; m\\Omega > \\omega \\text{ 時變成放大}"],
     explain: '<p>1971 年澤爾多維奇預言：一個<b>會吸收波的物體</b>，只要轉得夠快，打到它上面、帶有角動量的波不但不會被吸收，反而會<b>被放大</b>。</p><p>原因是<b>旋轉都卜勒效應</b>：帶角動量 \\(m\\) 的波（波前是 m 股的螺旋），在跟著物體轉的座標裡，頻率變成 \\(\\omega - m\\Omega\\)。吸收的多寡正比於這個頻率；轉速超過 \\(\\omega/m\\) 時它變成負的，「吸收」就變成「放出」，多出來的能量是從物體的轉動拿的。</p><p>旋轉黑洞也會這樣放大打上去的波（黑洞超輻射，跟彭羅斯過程是同一類）。2020 年在聲波、2024 年在電磁波上用旋轉的吸收體實驗證實了。</p><p>畫面借《JoJo》第七部《飆馬野郎》傑洛·齊貝林的<b>鋼球</b>：「回轉之中蘊含著無限的力量」，在這裡剛好是對的：能量真的從回轉來。（模型是簡化版：振幅倍率取 \\(e^{-\\kappa(1 - m\\Omega/\\omega)}\\)，只示意正負號與門檻。）</p>',
     watch: ['鋼球不轉時，右邊出去的螺旋波變小（被吸收）。', '轉速剛好 Ω = ω/m 時，波直接穿過、不增不減。', '超過門檻後右邊的波變大，螺旋變成金色：澤爾多維奇放大。', '把 m 調大：門檻 ω/m 變低，比較容易放大。'],
     params: [

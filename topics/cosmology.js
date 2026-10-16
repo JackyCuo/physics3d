@@ -26,7 +26,7 @@ export default [
     id: 'friedmann', realm: 'theory', cat: '宇宙學', title: '弗里德曼方程', en: 'Friedmann Equations · Expanding Universe', keys: '弗里曼 宇宙膨脹 大霹靂 暗能量 dark energy',
     tex: ['H^2 = \\left(\\dfrac{\\dot a}{a}\\right)^2 = \\dfrac{8\\pi G}{3}\\rho - \\dfrac{kc^2}{a^2} + \\dfrac{\\Lambda c^2}{3}', '\\dfrac{\\ddot a}{a} = -\\dfrac{4\\pi G}{3}\\left(\\rho + \\dfrac{3p}{c^2}\\right) + \\dfrac{\\Lambda c^2}{3}'],
     explain: '<p>從廣義相對論推出來的宇宙膨脹方程。\\(a(t)\\) 是<b>尺度因子</b>：今天 \\(a=1\\)，\\(a=0.5\\) 代表當時任兩個星系的距離只有今天的一半。星系本身沒有在空間裡跑，是<b>空間本身被撐開</b>。</p><p>物質（\\(\\Omega_m\\)）的重力讓膨脹減速，暗能量（\\(\\Omega_\\Lambda\\)）讓膨脹加速；兩者加起來決定空間的曲率 \\(\\Omega_k = 1-\\Omega_m-\\Omega_\\Lambda\\)。</p><p>我們的宇宙大約是 \\(\\Omega_m \\approx 0.3,\\ \\Omega_\\Lambda \\approx 0.7\\)：前段減速、後段加速膨脹，曲線先凹後凸。</p>',
-    watch: ['白框是一個「跟著空間走」的立方體，框裡的星系數量永遠不變。', '把 ΩΛ 調成 0、Ωm 調到 2 以上：宇宙膨脹到最大後再塌縮（大擠壓）。', '只有物質（Ωm=1、ΩΛ=0）時，a(t) ∝ t^{2/3}，永遠減速但不停止。'],
+    watch: ['白框是一個「跟著空間走」的立方體，框裡的星系數量永遠不變。', '把 \\(\\Omega_\\Lambda\\) 調成 0、\\(\\Omega_m\\) 調到 2 以上：宇宙膨脹到最大後再塌縮（大擠壓）。', '只有物質（\\(\\Omega_m=1,\\ \\Omega_\\Lambda=0\\)）時，\\(a(t) \\propto t^{2/3}\\)，永遠減速但不停止。'],
     params: [
       { k: 'Om', label: '物質密度 Ωm', min: 0, max: 3, step: 0.05, v: 0.3 },
       { k: 'OL', label: '暗能量 ΩΛ', min: 0, max: 1.5, step: 0.05, v: 0.7 },

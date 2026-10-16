@@ -5,6 +5,7 @@ const REALMS = { classic: '經典物理', theory: '理論物理', quantum: '量�
 // 側欄分類的順序就是這裡的檔案順序＋各檔裡主題的順序
 const MODS = ['mechanics', 'fluids', 'thermo', 'waves', 'optics', 'em', 'relativity', 'cosmology', 'analytic', 'quantum'];
 const TOPICS = (await Promise.all(MODS.map(m => import(`./topics/${m}.js`)))).flatMap(m => m.default);
+const SYMS = (await import('./topics/symbols.js')).default;
 
 const $ = s => document.querySelector(s);
 const el = (tag, text, cls) => { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; };
@@ -278,6 +279,9 @@ function renderPanel(tp) {
   $('#en').textContent = tp.en || '';
   $('#mTitle').textContent = tp.title;
   $('#formula').innerHTML = [].concat(tp.tex).map(s => tex(s, true)).join('');
+  const sy = SYMS[tp.id] || [];
+  $('#syms').innerHTML = sy.map(([k, d]) => `<dt>${tex(k, false)}</dt><dd>${rich(d)}</dd>`).join('');
+  $('#syms').hidden = !sy.length;
   $('#explain').innerHTML = rich(tp.explain || '');
   const w = $('#watch'); w.replaceChildren(...(tp.watch || []).map(s => { const li = el('li'); li.innerHTML = rich(s); return li; }));
   $('#watchBox').hidden = !tp.watch?.length;

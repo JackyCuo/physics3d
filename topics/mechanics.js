@@ -753,7 +753,7 @@ export default [
   },
   {
     id: 'timestop', realm: 'classic', cat: '力學', title: '時間暫停（DIO 版）', en: 'Time Stop · THE WORLD (JoJo parody)', keys: 'jojo dio 時間停止 the world 世界 慣性 動量 狀態',
-    tex: ['\\Delta t_{\\text{世界}} = 0 \;\\Rightarrow\; \\vec x,\\ \\vec v\\ \\text{凍結}', '\\text{恢復後：}\\ \\vec x(t) = \\vec x_0 + \\vec v_0 t + \\tfrac12 \\vec g t^2'],
+    tex: ['\\Delta t_{\\text{世界}} = 0 \\;\\Rightarrow\\; \\vec x,\\ \\vec v\\ \\text{凍結}', '\\text{恢復後：}\\ \\vec x(t) = \\vec x_0 + \\vec v_0 t + \\tfrac12 \\vec g t^2'],
     explain: '<p>「THE WORLD！時間啊，停止吧！」——時間停止是《JoJo 的奇妙冒險》裡 DIO 的替身能力，真實物理做不到。但拿它來想一件事很有用：<b>位置和速度是物體的「狀態」</b>。</p><p>時間停了，每個東西的位置和速度都被凍結；速度沒有消失，只是「時間」不走了。時間一恢復，物體就從凍結的狀態接著照牛頓定律運動：掉到一半的蘋果繼續加速往下掉，DIO 丟出去的飛刀帶著原本的速度一起飛向目標。</p><p>所以動量 \\(\\vec p = m\\vec v\\) 不需要「時間在走」才存在——它是物體當下的狀態。</p>',
     watch: ['「ロードローラーだッ！」壓路機在停止的時間裡放到木頭人頭上、速度是 0；時間一動才開始自由落體，撞上時的速度就是 √(2gh)。', '時間停止時蘋果停在半空，但青色速度箭頭還在：速度被保存著。', '時間恢復後，蘋果從停住前的速度接著加速，只是整段往後延。', 'DIO 在停止的時間裡丟出的飛刀，離手一下就停住；時間一動，全部同時飛向木頭人。', '右側「世界時間」在停止時不動，「DIO 的時間」照走。'],
     params: [

@@ -108,6 +108,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #formula { overflow-x: auto; overflow-y: hidden; padding: 4px 0; color: #fff; }
 #formula .katex-display { margin: 6px 0; }
 #formula .katex { font-size: 1.28em; }
+#syms { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 12px 0 0; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.08); font-size: 14px; }
+#syms dt { color: #fff; text-align: right; white-space: nowrap; }
+#syms[hidden] { display: none; }
+#syms dd { margin: 0; color: rgba(233,237,245,.78); }
 .formulaCard .core { background: linear-gradient(160deg, color-mix(in srgb, var(--acc) 10%, rgba(13,14,20,.9)), rgba(13,14,20,.9) 60%); }
 .param { display: block; margin: 0 0 16px; }
 .param.inline .phead { margin: 0; }
@@ -228,7 +232,7 @@ dialog form { margin-top: 18px; text-align: right; }
 <aside id="panel">
   <div class="top"><span class="eyebrow" id="eyebrow"></span><button class="ghost" id="helpBtn">說明</button></div>
   <div><h1 id="title"></h1><p id="en"></p></div>
-  <div class="shell card formulaCard"><div class="core"><h4>方程式</h4><div id="formula"></div></div></div>
+  <div class="shell card formulaCard"><div class="core"><h4>方程式</h4><div id="formula"></div><dl id="syms"></dl></div></div>
   <div class="shell card" id="paramBox"><div class="core"><h4>調整參數</h4><div id="params"></div></div></div>
   <div class="shell card" id="outBox" hidden><div class="core"><h4>即時數值</h4><div id="outs"></div></div></div>
   <div class="shell card"><div class="core"><h4>原理</h4><div id="explain"></div></div></div>

@@ -130,7 +130,7 @@ function levelScene({ root, U, P, out }, o) {
 export default [
   {
     id: 'blackbody', realm: 'quantum', cat: '量子起源', title: '黑體輻射與普朗克常數', en: "Blackbody Radiation · Planck's Law", keys: '普朗克 planck 紫外災難 維恩 wien 黑體',
-    tex: ['B_\\lambda(T) = \\dfrac{2hc^2}{\\lambda^5}\\,\\dfrac{1}{e^{hc/\\lambda k_B T}-1}', 'E = hf,\\qquad \\lambda_{\\max} T = 2.898\\times10^{-3}\\ \\text{m·K}'],
+    tex: ['B_\\lambda(T) = \\dfrac{2hc^2}{\\lambda^5}\\,\\dfrac{1}{e^{hc/\\lambda k_B T}-1}', 'E = hf,\\qquad \\lambda_{\\max} T = 2.898\\times10^{-3}\\ \\text{m}\\cdot\\text{K}'],
     explain: '<p>任何有溫度的物體都會發光。古典物理（瑞立–金斯公式，左下虛線）預測波長越短光越強，短波長會衝到無限大——這叫<b>紫外災難</b>。</p><p>1900 年普朗克假設光的能量只能一份一份地交換，每份 \\(E = hf\\)。高頻光的一份能量太大、很難被激發，曲線就在短波長端掉下來，和實驗完全吻合。這是<b>量子力學的起點</b>。</p><p>溫度越高，峰值往短波長移（維恩位移定律）：鐵塊從暗紅、橘、黃白一路變成藍白。</p>',
     watch: ['把溫度從 1000 K 拉到 10000 K：球的顏色從暗紅變藍白，峰值往左移。', '虛線（古典預測）在短波長往上衝，實線（普朗克）乖乖掉回 0。', '飛出的光子按普朗克分布抽樣，溫度低時大多是看不見的紅外線（暗紅點）。'],
     params: [{ k: 'T', label: '溫度 T', min: 1000, max: 10000, step: 50, v: 5800, unit: 'K' }],
@@ -410,7 +410,7 @@ export default [
     id: 'infinitewell', realm: 'quantum', cat: '波函數', title: '無限位能井（盒中粒子）', en: 'Particle in a Box · Schrödinger Equation', keys: '薛丁格 schrodinger 能階 量子化 位能井',
     tex: ['-\\dfrac{\\hbar^2}{2m}\\dfrac{d^2\\psi}{dx^2} = E\\psi', 'E_n = \\dfrac{n^2\\pi^2\\hbar^2}{2mL^2},\\quad \\psi_n = \\sqrt{\\tfrac{2}{L}}\\sin\\dfrac{n\\pi x}{L}'],
     explain: '<p>把粒子關在兩面無限高的牆之間，解<b>薛丁格方程</b>：波函數在牆上必須是 0，所以只能是「兩端固定的弦」那種駐波，盒子裡剛好裝半個、一個、一個半…波長。</p><p>能量因此只能是特定值 \\(E_n \\propto n^2\\)——這就是<b>能量量子化</b>。最低能量 \\(E_1\\) 也不是 0：粒子永遠不會完全靜止（零點能）。</p><p>螺旋是 \\(\\psi\\) 隨時間轉動的相位；單一能階的 \\(|\\psi|^2\\)（白線）不隨時間改變，所以叫<b>定態</b>。</p>',
-    watch: ['能階間距越往上越大（1、4、9、16…）。', '第 n 個能階有 n−1 個節點，那裡永遠找不到粒子。', '打開「疊加兩個能階」：白色的機率分布開始左右晃動，晃動頻率 = 能量差 / h。'],
+    watch: ['能階高度照 1、4、9、16… 倍增加，所以間距越往上越大（3、5、7…）。', '第 n 個能階有 n−1 個節點，那裡永遠找不到粒子。', '打開「疊加兩個能階」：白色的機率分布開始左右晃動，晃動頻率 = 能量差 / h。'],
     params: [
       { k: 'n', label: '能階 n', min: 1, max: 6, step: 1, v: 2 },
       { k: 'sup', label: '疊加兩個能階', bool: true, v: false },
@@ -809,7 +809,7 @@ export default [
   },
   {
     id: 'timetravel', realm: 'quantum', cat: '量子態', title: '時光旅行與祖父悖論（回到未來版）', en: 'Time Travel · Grandfather Paradox (Back to the Future parody)', keys: '回到未來 back to the future 時光機 迪羅倫 delorean 祖父悖論 grandfather paradox 封閉類時曲線 ctc deutsch 自洽 novikov 多世界',
-    tex: ['p_{\\text{下一輪}} = 1 - q\\,p', '\\text{Deutsch 自洽條件：}\\ \\rho = \\operatorname{Tr}_{\\text{外}}\\!\\left[U(\\rho_{\\text{外}}\\otimes\\rho)U^\\dagger\\right] \;\\Rightarrow\; p^* = \\dfrac{1}{1+q}'],
+    tex: ['p_{\\text{下一輪}} = 1 - q\\,p', '\\text{Deutsch 自洽條件：}\\ \\rho = \\operatorname{Tr}_{\\text{外}}\\!\\left[U(\\rho_{\\text{外}}\\otimes\\rho)U^\\dagger\\right] \\;\\Rightarrow\\; p^* = \\dfrac{1}{1+q}'],
     explain: '<p><b>往未來</b>的時光旅行是真的：跑得快（時間膨脹）或待在重力強的地方，你的時間就走得比別人慢，回來時別人老得比你多。GPS 衛星每天都要修正這個。</p><p><b>回到過去</b>就難了。廣義相對論的某些解（旋轉宇宙、可穿越的蟲洞）允許「封閉類時曲線」：一路往前走，卻回到自己的過去。但這需要負能量之類沒人做得出來的東西，到現在也沒人知道真的行不行。</p><p>就算能回去，也有<b>祖父悖論</b>：回到過去阻止祖父母相遇，自己就不會出生；不出生就沒人回去阻止，那他們又會相遇……在《回到未來》裡是馬蒂害爸媽沒相遇，照片上的自己開始消失。</p><p>三種解法：<b>古典</b>規定歷史只能是 0 或 1，這時找不到自洽的答案，照片會一直閃（悖論）。<b>諾維科夫自洽原則</b>則說，只會發生前後一致的歷史，所以你注定會失敗。<b>Deutsch 的量子解</b>（1991）允許時光機裡的狀態是機率混合，可以證明自洽解<b>一定存在</b>：阻止一定成功時，馬蒂剛好「一半存在」，照片上的他是半透明的。另一種說法是多世界：你回去改的是另一條時間線，就像布朗博士在黑板上畫的「另一個 1985」。</p><p>88 英里時速和 1.21 吉瓦是電影設定，不是物理。</p>',
     watch: ['左下圖的斜線是「這一輪馬蒂存在的機率 → 下一輪的機率」，跟對角線的交點就是自洽解。', '關掉「Deutsch 量子解」並把阻止成功機率拉到 1：照片上的馬蒂 1、0、1、0 一直閃，永遠沒有自洽的歷史，這就是祖父悖論。', '打開量子解：馬蒂穩定在交點的機率（q = 1 時剛好 50%，半透明）。', '成功機率 0（什麼都沒做）：p = 1，跟古典一樣沒問題。'],
     params: [
