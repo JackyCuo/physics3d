@@ -294,8 +294,12 @@ function renderPanel(tp) {
   $('#explain').innerHTML = rich(tp.explain || '');
   const dv = DERIV[tp.id] || [];
   $('#deriveBox').hidden = !dv.length;
+  // 預設收合；收合時量不到寬度，展開那一刻才斷行
+  const det = $('#deriveDet');
+  det.open = false;
+  $('#deriveN').textContent = `${dv.length} 步`;
   $('#derive').innerHTML = dv.map(([t, e]) => `<li><p>${rich(t)}</p>${e ? eq(e) : ''}</li>`).join('');
-  fit($('#derive'), dv.map(r => r[1]).filter(Boolean));
+  det.ontoggle = () => { if (det.open) fit($('#derive'), dv.map(r => r[1]).filter(Boolean)); };
   const w = $('#watch'); w.replaceChildren(...(tp.watch || []).map(s => { const li = el('li'); li.innerHTML = rich(s); return li; }));
   $('#watchBox').hidden = !tp.watch?.length;
 

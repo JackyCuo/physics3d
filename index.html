@@ -142,6 +142,13 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 #explain { color: rgba(233,237,245,.82); }
 #explain p { margin: 0 0 10px; } #explain p:last-child { margin: 0; }
 #explain b, #watch b { color: var(--acc); font-weight: 500; }
+#deriveDet summary { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: -12px 0; cursor: pointer; list-style: none; }
+#deriveDet summary::-webkit-details-marker { display: none; }
+#deriveDet summary h4 { margin: 0; }
+#deriveDet summary span { margin-left: auto; font: 13px var(--mono); color: var(--acc); }
+#deriveDet summary span::after { content: ' ▾'; }
+#deriveDet[open] summary span::after { content: ' ▴'; }
+#deriveDet[open] summary { margin-bottom: 4px; }
 #derive { margin: 0; padding-left: 20px; color: rgba(233,237,245,.82); }
 #derive li { margin-bottom: 12px; } #derive li::marker { color: var(--acc); font: 13px var(--mono); }
 #derive p { margin: 0 0 4px; }
@@ -242,7 +249,7 @@ dialog form { margin-top: 18px; text-align: right; }
   <div class="shell card" id="paramBox"><div class="core"><h4>調整參數</h4><div id="params"></div></div></div>
   <div class="shell card" id="outBox" hidden><div class="core"><h4>即時數值</h4><div id="outs"></div></div></div>
   <div class="shell card"><div class="core"><h4>原理</h4><div id="explain"></div></div></div>
-  <div class="shell card" id="deriveBox"><div class="core"><h4>推導過程</h4><ol id="derive"></ol></div></div>
+  <div class="shell card" id="deriveBox"><div class="core"><details id="deriveDet"><summary><h4>推導過程</h4><span id="deriveN"></span></summary><ol id="derive"></ol></details></div></div>
   <div class="shell card" id="watchBox"><div class="core"><h4>觀察重點</h4><ul id="watch"></ul></div></div>
 </aside>
 
